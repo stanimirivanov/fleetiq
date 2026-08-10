@@ -1,0 +1,161 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL with Extensions ──────────────────────────
+  postgres:
+    image: timescale/timescaledb:2.16.1-pg16
+    container_name: fleetiq-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: fleetiq
+      POSTGRES_PASSWORD: fleetiq_dev
+      POSTGRES_MULTIPLE_DATABASES: >
+        telemetry_db,
+        device_registry_db,
+        topology_db,
+        maintenance_db,
+        pekko_journal_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleetiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fleetiq-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2"
+
+  # ── MQTT Broker ────────────────────────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: fleetiq-mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - fleetiq-net
+
+  # ── Keycloak ───────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: fleetiq-keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: fleetiq
+      KC_DB_PASSWORD: fleetiq_dev
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fleetiq-net
+
+  # ── Vault (Dev Mode) ──────────────────────────────────
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: fleetiq-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: fleetiq-dev-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - fleetiq-net
+
+  # ── Observability Stack ───────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.54
+    container_name: fleetiq-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    networks:
+      - fleetiq-net
+
+  tempo:
+    image: grafana/tempo:2.6
+    container_name: fleetiq-tempo
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    command: -config.file=/etc/tempo/tempo.yaml
+    networks:
+      - fleetiq-net
+
+  loki:
+    image: grafana/loki:3.2
+    container_name: fleetiq-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - fleetiq-net
+
+  grafana:
+    image: grafana/grafana:11.2
+    container_name: fleetiq-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    networks:
+      - fleetiq-net
+
+  # ── OpenTelemetry Collector ────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111
+    container_name: fleetiq-otel-collector
+    ports:
+      - "4319:4317"   # OTLP gRPC receiver (different host port to avoid clash)
+      - "8888:8888"   # Prometheus metrics exposed by collector
+      - "13133:13133" # Health check
+    volumes:
+      - ./otel/otel-collector-config.yaml:/etc/otel/config.yaml:ro
+    command: --config /etc/otel/config.yaml
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    networks:
+      - fleetiq-net
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+  grafana_data:
+
+networks:
+  fleetiq-net:
+    driver: bridge

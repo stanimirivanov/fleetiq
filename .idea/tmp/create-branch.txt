@@ -2,10 +2,11 @@ git checkout main
 git pull
 
 ===
-Project Scaffold
- #1
+PostgreSQL with Extensions
+ #3
 
-git switch -c issue-1-project-scaffold
+
+git switch -c issue-3-postgresql-with-extensions
 git add .
-git commit -m "[#241] Project scaffold"
+git commit -m "[#3] PostgreSQL with Extensions"
 git push
