@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package fleetiq.maintenance.v1;
+
+import "fleetiq/common/v1/types.proto";
+
+option java_package = "io.fleetiq.proto.maintenance.v1";
+option java_multiple_files = true;
+
+service MaintenancePredictor {
+    rpc PredictMaintenance(PredictMaintenanceRequest) returns (PredictMaintenanceResponse);
+    rpc GetPredictionHistory(GetPredictionHistoryRequest) returns (GetPredictionHistoryResponse);
+    rpc RecordMaintenanceEvent(RecordMaintenanceEventRequest) returns (RecordMaintenanceEventResponse);
+}
+
+message PredictMaintenanceRequest {
+    string vin = 1;
+    int32 lookback_days = 2;
+}
+
+message PredictMaintenanceResponse {
+    string prediction_id = 1;
+    string vin = 2;
+    double failure_probability = 3;
+    string predicted_component = 4;
+    int32 estimated_days_until_failure = 5;
+    string recommendation = 6;
+    repeated string evidence_ids = 7;
+    fleetiq.common.v1.Timestamp generated_at = 8;
+}
+
+message GetPredictionHistoryRequest {
+    string vin = 1;
+    int32 limit = 2;
+}
+message GetPredictionHistoryResponse {
+    repeated PredictMaintenanceResponse predictions = 1;
+}
+
+message RecordMaintenanceEventRequest {
+    string vin = 1;
+    string component = 2;
+    string description = 3;
+    string severity = 4;
+    fleetiq.common.v1.Timestamp occurred_at = 5;
+    map<string, string> metadata = 6;
+}
+message RecordMaintenanceEventResponse {
+    string event_id = 1;
+}

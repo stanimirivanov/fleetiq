@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package fleetiq.topology.v1;
+
+import "fleetiq/common/v1/types.proto";
+
+option java_package = "io.fleetiq.proto.topology.v1";
+option java_multiple_files = true;
+
+service FleetTopology {
+    rpc CreateRelationship(CreateRelationshipRequest) returns (CreateRelationshipResponse);
+    rpc GetFleetGraph(GetFleetGraphRequest) returns (GetFleetGraphResponse);
+    rpc FindNearbyVehicles(FindNearbyRequest) returns (FindNearbyResponse);
+}
+
+enum RelationshipType {
+    RELATIONSHIP_TYPE_UNSPECIFIED = 0;
+    RELATIONSHIP_TYPE_CONVOY = 1;
+    RELATIONSHIP_TYPE_DEPOT = 2;
+    RELATIONSHIP_TYPE_TRAILER = 3;
+}
+
+message CreateRelationshipRequest {
+    string source_vin = 1;
+    string target_vin = 2;
+    RelationshipType type = 3;
+    map<string, string> properties = 4;
+}
+message CreateRelationshipResponse { bool created = 1; }
+
+message GetFleetGraphRequest {
+    string root_vin = 1;
+    int32 max_depth = 2;
+}
+message GetFleetGraphResponse {
+    repeated TopologyNode nodes = 1;
+    repeated TopologyEdge edges = 2;
+}
+
+message TopologyNode {
+    string vin = 1;
+    string device_type = 2;
+    fleetiq.common.v1.VehicleStatus status = 3;
+}
+
+message TopologyEdge {
+    string source_vin = 1;
+    string target_vin = 2;
+    RelationshipType type = 3;
+}
+
+message FindNearbyRequest {
+    fleetiq.common.v1.GeoPoint center = 1;
+    double radius_km = 2;
+}
+message FindNearbyResponse {
+    repeated string vins = 1;
+}

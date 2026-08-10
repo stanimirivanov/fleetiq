@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package fleetiq.telemetry.v1;
+
+import "fleetiq/common/v1/types.proto";
+
+option java_package = "io.fleetiq.proto.telemetry.v1";
+option java_multiple_files = true;
+
+service TelemetryIngestion {
+    rpc IngestTelemetry(IngestTelemetryRequest) returns (IngestTelemetryResponse);
+    rpc IngestBatch(stream TelemetrySample) returns (IngestBatchResponse);
+}
+
+message TelemetrySample {
+    string vin = 1;
+    fleetiq.common.v1.Timestamp timestamp = 2;
+    fleetiq.common.v1.GeoPoint position = 3;
+    double speed_kmh = 4;
+    double fuel_level_pct = 5;
+    double engine_temp_celsius = 6;
+    double battery_voltage = 7;
+    map<string, double> custom_metrics = 8;
+}
+
+message IngestTelemetryRequest { TelemetrySample sample = 1; }
+message IngestTelemetryResponse {
+    bool accepted = 1;
+    string message = 2;
+}
+
+message IngestBatchResponse {
+    int32 accepted_count = 1;
+    int32 rejected_count = 2;
+}

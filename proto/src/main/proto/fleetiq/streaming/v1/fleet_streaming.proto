@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package fleetiq.streaming.v1;
+
+import "fleetiq/common/v1/types.proto";
+
+option java_package = "io.fleetiq.proto.streaming.v1";
+option java_multiple_files = true;
+
+service FleetStreaming {
+    rpc WatchFleet(WatchFleetRequest) returns (stream PositionUpdate);
+    rpc WatchVehicle(WatchVehicleRequest) returns (stream PositionUpdate);
+}
+
+message WatchFleetRequest {
+    repeated string vins = 1; // empty = all vehicles
+    double min_update_interval_seconds = 2;
+}
+
+message WatchVehicleRequest {
+    string vin = 1;
+    double min_update_interval_seconds = 2;
+}
+
+message PositionUpdate {
+    string vin = 1;
+    fleetiq.common.v1.Timestamp timestamp = 2;
+    fleetiq.common.v1.GeoPoint position = 3;
+    double speed_kmh = 4;
+    fleetiq.common.v1.VehicleStatus status = 5;
+}
