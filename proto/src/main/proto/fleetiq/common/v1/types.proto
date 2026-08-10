@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package fleetiq.common.v1;
+
+option java_package = "io.fleetiq.proto.common.v1";
+option java_multiple_files = true;
+
+message GeoPoint {
+    double latitude = 1;
+    double longitude = 2;
+    double altitude = 3;
+}
+
+message Timestamp {
+    int64 epoch_millis = 1;
+}
+
+enum VehicleStatus {
+    VEHICLE_STATUS_UNSPECIFIED = 0;
+    VEHICLE_STATUS_IDLE = 1;
+    VEHICLE_STATUS_MOVING = 2;
+    VEHICLE_STATUS_CHARGING = 3;
+    VEHICLE_STATUS_MAINTENANCE = 4;
+    VEHICLE_STATUS_ERROR = 5;
+}

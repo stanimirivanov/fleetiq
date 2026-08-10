@@ -1,0 +1,11 @@
+git checkout main
+git pull
+
+===
+Project Scaffold
+ #1
+
+git switch -c issue-1-project-scaffold
+git add .
+git commit -m "[#241] Project scaffold"
+git push

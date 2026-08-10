@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package fleetiq.device.v1;
+
+import "fleetiq/common/v1/types.proto";
+
+option java_package = "io.fleetiq.proto.device.v1";
+option java_multiple_files = true;
+
+service DeviceRegistry {
+    rpc RegisterDevice(RegisterDeviceRequest) returns (RegisterDeviceResponse);
+    rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
+    rpc UpdateDeviceStatus(UpdateDeviceStatusRequest) returns (UpdateDeviceStatusResponse);
+}
+
+message Device {
+    string vin = 1;
+    string device_type = 2;
+    string manufacturer = 3;
+    string model = 4;
+    int32 year = 5;
+    map<string, string> capabilities = 6;
+    fleetiq.common.v1.VehicleStatus status = 7;
+    fleetiq.common.v1.Timestamp registered_at = 8;
+}
+
+message RegisterDeviceRequest {
+    string vin = 1;
+    string device_type = 2;
+    string manufacturer = 3;
+    string model = 4;
+    int32 year = 5;
+    map<string, string> capabilities = 6;
+}
+
+message RegisterDeviceResponse { Device device = 1; }
+
+message GetDeviceRequest { string vin = 1; }
+message GetDeviceResponse { Device device = 1; }
+
+message UpdateDeviceStatusRequest {
+    string vin = 1;
+    fleetiq.common.v1.VehicleStatus status = 2;
+}
+message UpdateDeviceStatusResponse { Device device = 1; }
