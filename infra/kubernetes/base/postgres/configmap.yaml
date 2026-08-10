@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: fleetiq
+data:
+  01-create-databases.sql: |
+    -- Telemetry Database
+    CREATE DATABASE telemetry_db;
+    \c telemetry_db
+    CREATE EXTENSION IF NOT EXISTS timescaledb;
+    CREATE EXTENSION IF NOT EXISTS vector;
+
+    -- Device Registry Database
+    CREATE DATABASE device_registry_db;
+    \c device_registry_db
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+    -- Fleet Topology Database
+    CREATE DATABASE topology_db;
+    \c topology_db
+    CREATE EXTENSION IF NOT EXISTS age;
+    CREATE EXTENSION IF NOT EXISTS postgis;
+
+    -- Maintenance Database
+    CREATE DATABASE maintenance_db;
+    \c maintenance_db
+    CREATE EXTENSION IF NOT EXISTS vector;
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+    -- Pekko Journal Database
+    CREATE DATABASE pekko_journal_db;
+
+    -- Keycloak Database
+    CREATE DATABASE keycloak_db;
+
+    -- Verify
+    SELECT datname FROM pg_database WHERE datname LIKE '%_db' OR datname = 'keycloak_db' ORDER BY datname;
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: fleetiq
+data:
+  postgresql.conf: |
+    # FleetIQ PostgreSQL Configuration
+    listen_addresses = '*'
+    max_connections = 200
+    shared_buffers = 256MB
+    effective_cache_size = 768MB
+    maintenance_work_mem = 64MB
+    checkpoint_completion_target = 0.9
+    wal_buffers = 16MB
+    default_statistics_target = 100
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    work_mem = 4MB
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+
+    # Extensions
+    shared_preload_libraries = 'timescaledb,pg_stat_statements'
+    timescaledb.telemetry_level = 'off'
+
+    # Logging
+    log_destination = 'stderr'
+    logging_collector = on
+    log_directory = 'pg_log'
+    log_filename = 'postgresql-%a.log'
+    log_truncate_on_rotation = on
+    log_rotation_age = 1d
+    log_rotation_size = 0
+    log_min_duration_statement = 1000
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    log_lock_waits = on
