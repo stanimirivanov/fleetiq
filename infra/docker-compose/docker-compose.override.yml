@@ -1,0 +1,61 @@
+# Development overrides — used automatically with docker compose
+# Adds development conveniences: debug ports, live reload mounts, relaxed security
+
+version: "3.9"
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"  # Expose for local tooling
+    environment:
+      POSTGRES_LOG_STATEMENT: "all"
+      POSTGRES_LOG_CONNECTIONS: "on"
+
+  mosquitto:
+    ports:
+      - "1883:1883"
+      - "9001:9001"  # WebSocket port for debugging
+
+  keycloak:
+    ports:
+      - "8080:8080"
+    environment:
+      KC_LOG_LEVEL: "DEBUG"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+
+  vault:
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_LOG_LEVEL: "debug"
+
+  prometheus:
+    ports:
+      - "9090:9090"
+
+  grafana:
+    ports:
+      - "3000:3000"
+
+  # Jaeger-like trace UI via Tempo
+  # Tempo doesn't have a UI; Grafana handles trace visualization
+
+  # Optional: pgAdmin for database inspection
+  pgadmin:
+    image: dpage/pgadmin4:8.12
+    container_name: fleetiq-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@fleetiq.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - fleetiq-net
+    profiles:
+      - tools  # Only started with: docker compose --profile tools up
+
+volumes:
+  pgadmin_data:
