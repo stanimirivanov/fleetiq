@@ -19,6 +19,8 @@ spec:
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
         sidecar.istio.io/inject: "true"
+        argocd-image-updater.argoproj.io/image-list: telemetry-ingestion=ghcr.io/fleetiq/telemetry-ingestion
+        argocd-image-updater.argoproj.io/update-strategy: semver
     spec:
       serviceAccountName: device-registry
       containers:

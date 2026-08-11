@@ -16,6 +16,8 @@ spec:
     metadata:
       annotations:
         sidecar.istio.io/inject: "true"
+        argocd-image-updater.argoproj.io/image-list: telemetry-ingestion=ghcr.io/fleetiq/telemetry-ingestion
+        argocd-image-updater.argoproj.io/update-strategy: semver
     spec:
       serviceAccountName: streaming-hub
       containers:
