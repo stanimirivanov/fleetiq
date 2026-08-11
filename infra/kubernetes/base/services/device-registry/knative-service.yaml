@@ -1,0 +1,43 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: device-registry
+  namespace: fleetiq
+  labels:
+    app: device-registry
+    component: registry
+  annotations:
+    autoscaling.knative.dev/min-scale: "0"
+    autoscaling.knative.dev/max-scale: "5"
+    autoscaling.knative.dev/target: "50"
+    autoscaling.knative.dev/scale-down-delay: "2m"
+spec:
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/q/metrics"
+        prometheus.io/port: "8082"
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: device-registry
+      containers:
+        - image: ghcr.io/fleetiq/device-registry:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+              name: http
+            - containerPort: 9002
+              name: grpc
+          env:
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: username
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: password
+          resources:

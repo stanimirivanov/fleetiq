@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fleetiq
+
+resources:
+  - namespace.yaml
+  - postgres/statefulset.yaml
+  - postgres/service.yaml
+  - postgres/configmap.yaml
+  - postgres/secrets.yaml
+  - mosquitto/deployment.yaml
+  - mosquitto/service.yaml
+  - mosquitto/configmap.yaml
+  - keycloak/deployment.yaml
+  - keycloak/service.yaml
+  - monitoring/otel-collector.yaml
+  - monitoring/prometheus.yaml
+  - monitoring/grafana.yaml
+  - istio/gateway.yaml
+  - istio/peer-authentication.yaml
+  - istio/destination-rules.yaml
+  - auth/request-authentication.yaml
+  - auth/authorization-policy.yaml
+  - services/telemetry-ingestion/knative-service.yaml
+  - services/telemetry-ingestion/configmap.yaml
+  - services/telemetry-ingestion/virtual-service.yaml
+  - services/device-registry/knative-service.yaml
+  - services/device-registry/configmap.yaml
+  - services/device-registry/virtual-service.yaml
+  - services/fleet-topology/knative-service.yaml
+  - services/fleet-topology/configmap.yaml
+  - services/fleet-topology/virtual-service.yaml
+  - services/maintenance-predictor/cronjob.yaml
+  - services/maintenance-predictor/knative-service.yaml
+  - services/maintenance-predictor/configmap.yaml
+  - services/maintenance-predictor/virtual-service.yaml
+  - services/streaming-hub/knative-service.yaml
+  - services/streaming-hub/configmap.yaml
+  - services/streaming-hub/virtual-service.yaml
+  - services/pekko-cluster/statefulset.yaml
+  - services/pekko-cluster/service.yaml
+  - services/pekko-cluster/headless-service.yaml
+  - services/pekko-cluster/configmap.yaml
+  - services/pekko-cluster/pdb.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: fleetiq
+  app.kubernetes.io/managed-by: kustomize

@@ -1,0 +1,17 @@
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: fleetiq-jwt-auth
+  namespace: fleetiq
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: fleetiq
+  jwtRules:
+    - issuer: "http://keycloak.fleetiq.svc.cluster.local:8080/realms/fleetiq"
+      jwksUri: "http://keycloak.fleetiq.svc.cluster.local:8080/realms/fleetiq/protocol/openid-connect/certs"
+      forwardOriginalToken: true
+      outputPayloadToHeader: x-fleetiq-user
+      fromHeaders:
+        - name: Authorization
+          prefix: "Bearer "
