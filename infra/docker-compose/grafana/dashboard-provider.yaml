@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: FleetIQ
+    folder: FleetIQ
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true
+    allowUiUpdates: true
+    editable: true
