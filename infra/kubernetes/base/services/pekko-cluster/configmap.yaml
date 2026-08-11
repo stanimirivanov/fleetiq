@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pekko-cluster-config
+  namespace: fleetiq
+data:
+  application.conf: |
+    pekko {
+      actor.provider = "cluster"
+      remote.artery {
+        canonical.hostname = ${PEKKO_HOST}
+        canonical.port = 2551
+      }
+      cluster {
+        seed-nodes = [
+          "pekko://fleetiq-cluster@pekko-cluster-0.pekko-cluster-headless.fleetiq.svc.cluster.local:2551",
+          "pekko://fleetiq-cluster@pekko-cluster-1.pekko-cluster-headless.fleetiq.svc.cluster.local:2551",
+          "pekko://fleetiq-cluster@pekko-cluster-2.pekko-cluster-headless.fleetiq.svc.cluster.local:2551"
+        ]
+        downing-provider-class = "org.apache.pekko.cluster.sbr.SplitBrainResolverProvider"
+      }
+    }

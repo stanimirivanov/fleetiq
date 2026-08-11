@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: maintenance-prediction-run
+  namespace: fleetiq
+  labels:
+    app: maintenance-predictor
+    component: scheduled
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          serviceAccountName: maintenance-predictor
+          restartPolicy: Never
+          containers:
+            - name: trigger
+              image: curlimages/curl:8.9
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  curl -X POST http://maintenance-predictor.fleetiq.svc.cluster.local:8084/q/scheduler/trigger \
+                    -H "Content-Type: application/json" \
+                    -d '{"lookback_days": 7}'

@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: maintenance-predictor-vs
+  namespace: fleetiq
+spec:
+  hosts:
+    - maintenance-predictor.fleetiq.svc.cluster.local
+  http:
+    - match:
+        - port: 9004
+      route:
+        - destination:
+            host: maintenance-predictor.fleetiq.svc.cluster.local
+            port:
+              number: 9004
+      timeout: 120s  # AI predictions can take time

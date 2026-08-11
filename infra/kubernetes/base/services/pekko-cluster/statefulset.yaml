@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pekko-cluster
+  namespace: fleetiq
+  labels:
+    app: pekko-cluster
+    component: actors
+spec:
+  serviceName: pekko-cluster-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: pekko-cluster
+  template:
+    metadata:
+      labels:
+        app: pekko-cluster
+        component: actors
+      annotations:
+        sidecar.istio.io/inject: "true"
+        traffic.sidecar.istio.io/excludeInboundPorts: "2551"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "2551"
+    spec:
+      serviceAccountName: pekko-cluster
+      containers:
+        - name: pekko
+          image: ghcr.io/fleetiq/pekko-cluster:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 2551
+              name: remoting
+              protocol: TCP
+            - containerPort: 8558
+              name: management
+              protocol: TCP
+          env:
+            - name: PEKKO_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: PEKKO_JDBC_HOST
+              value: postgres.fleetiq.svc.cluster.local
+            - name: PEKKO_JDBC_DB
+              value: pekko_journal_db
+            - name: PEKKO_JDBC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: username
+            - name: PEKKO_JDBC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: password
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx1024m -XX:+UseG1GC"
+          volumeMounts:
+            - name: config
+              mountPath: /app/resources
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "300m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            tcpSocket:
+              port: 8558
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8558
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: pekko-cluster-config
+      terminationGracePeriodSeconds: 60

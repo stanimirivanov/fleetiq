@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: streaming-hub-vs
+  namespace: fleetiq
+spec:
+  hosts:
+    - streaming-hub.fleetiq.svc.cluster.local
+  http:
+    - match:
+        - port: 9005
+      route:
+        - destination:
+            host: streaming-hub.fleetiq.svc.cluster.local
+            port:
+              number: 9005
+      timeout: 0s  # Infinite timeout for streaming

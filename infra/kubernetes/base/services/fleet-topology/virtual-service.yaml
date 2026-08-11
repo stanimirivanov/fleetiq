@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fleet-topology-vs
+  namespace: fleetiq
+spec:
+  hosts:
+    - fleet-topology.fleetiq.svc.cluster.local
+  http:
+    - match:
+        - port: 9003
+      route:
+        - destination:
+            host: fleet-topology.fleetiq.svc.cluster.local
+            port:
+              number: 9003
+      timeout: 10s

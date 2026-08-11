@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleet-topology-config
+  namespace: fleetiq
+data:
+  application.properties: |
+    quarkus.application.name=fleet-topology
+    quarkus.http.port=8083
+    quarkus.grpc.server.port=9003
+    quarkus.datasource.db-kind=postgresql
+    quarkus.datasource.jdbc.url=jdbc:postgresql://postgres.fleetiq.svc.cluster.local:5432/topology_db
+    quarkus.flyway.migrate-at-start=true
+    quarkus.otel.exporter.otlp.endpoint=http://otel-collector.fleetiq.svc.cluster.local:4317
+    quarkus.otel.service.name=fleet-topology

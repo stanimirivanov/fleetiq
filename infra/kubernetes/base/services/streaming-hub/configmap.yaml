@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streaming-hub-config
+  namespace: fleetiq
+data:
+  application.properties: |
+    quarkus.application.name=streaming-hub
+    quarkus.http.port=8085
+    quarkus.grpc.server.port=9005
+    quarkus.otel.exporter.otlp.endpoint=http://otel-collector.fleetiq.svc.cluster.local:4317
+    quarkus.otel.service.name=streaming-hub
