@@ -1,0 +1,29 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: telemetry-ingestion-vs
+  namespace: fleetiq
+spec:
+  hosts:
+    - telemetry-ingestion.fleetiq.svc.cluster.local
+  http:
+    - match:
+        - port: 8081
+      route:
+        - destination:
+            host: telemetry-ingestion.fleetiq.svc.cluster.local
+            port:
+              number: 8081
+      timeout: 10s
+      retries:
+        attempts: 3
+        perTryTimeout: 3s
+        retryOn: connect-failure,refused-stream,unavailable
+    - match:
+        - port: 9001
+      route:
+        - destination:
+            host: telemetry-ingestion.fleetiq.svc.cluster.local
+            port:
+              number: 9001
+      timeout: 30s

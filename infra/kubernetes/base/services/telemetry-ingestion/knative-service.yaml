@@ -1,0 +1,71 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: telemetry-ingestion
+  namespace: fleetiq
+  labels:
+    app: telemetry-ingestion
+    component: ingestion
+  annotations:
+    autoscaling.knative.dev/min-scale: "1"
+    autoscaling.knative.dev/max-scale: "10"
+    autoscaling.knative.dev/target: "100"
+    autoscaling.knative.dev/metric: concurrency
+    autoscaling.knative.dev/scale-down-delay: "5m"
+spec:
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/q/metrics"
+        prometheus.io/port: "8081"
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: telemetry-ingestion
+      containers:
+        - image: ghcr.io/fleetiq/telemetry-ingestion:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+              name: http
+            - containerPort: 9001
+              name: grpc
+          env:
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: username
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: password
+            - name: JAVA_OPTS
+              value: "-Xms128m -Xmx512m"
+          volumeMounts:
+            - name: config
+              mountPath: /work/config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: telemetry-ingestion-config

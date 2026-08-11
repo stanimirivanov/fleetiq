@@ -1,0 +1,68 @@
+# Default: deny all inter-service traffic unless explicitly allowed
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: fleetiq-default-deny
+  namespace: fleetiq
+spec:
+  action: DENY
+  rules:
+    - from:
+        - source:
+            notPrincipals: ["*"]  # Denies everything
+---
+# Allow health checks and metrics from monitoring
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-monitoring
+  namespace: fleetiq
+spec:
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            paths:
+              - "/q/health*"
+              - "/q/metrics*"
+              - "/health*"
+            methods: ["GET"]
+---
+# Allow gRPC communication between FleetIQ services
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-internal-grpc
+  namespace: fleetiq
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/fleetiq/sa/telemetry-ingestion"
+              - "cluster.local/ns/fleetiq/sa/device-registry"
+              - "cluster.local/ns/fleetiq/sa/fleet-topology"
+              - "cluster.local/ns/fleetiq/sa/maintenance-predictor"
+              - "cluster.local/ns/fleetiq/sa/streaming-hub"
+              - "cluster.local/ns/fleetiq/sa/pekko-cluster"
+      to:
+        - operation:
+            ports: ["9001", "9002", "9003", "9004", "9005"]  # gRPC ports
+---
+# Allow Pekko cluster internal communication
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-pekko-cluster
+  namespace: fleetiq
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/fleetiq/sa/pekko-cluster"
+      to:
+        - operation:
+            ports: ["2551", "8558"]  # Pekko remoting and management
