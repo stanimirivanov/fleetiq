@@ -1,0 +1,11 @@
+package io.fleetiq.device;
+
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
+
+@QuarkusMain
+public class DeviceRegistryApplication {
+    public static void main(String[] args) {
+        Quarkus.run(args);
+    }
+}
