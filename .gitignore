@@ -1,5 +1,43 @@
-build/
-out/
-*.iml
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Quarkus
+.quarkus/
+*.dylib
+
+# IDE
 .idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*~
+
+# Docker
+infra/docker-compose/.env.local
+
+# Kubernetes secrets (should be sealed/encrypted)
+infra/kubernetes/**/secrets.yaml
+!infra/kubernetes/base/postgres/secrets.yaml
+
+# Logs
+*.log
+logs/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# GraalVM native
+*.graal
+
+# Testcontainers
+.testcontainers.properties
