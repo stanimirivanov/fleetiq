@@ -58,13 +58,6 @@
             <artifactId>quarkus-kubernetes</artifactId>
         </dependency>
 
-        <!-- Database -->
-        <dependency>
-            <groupId>com.github.timescale</groupId>
-            <artifactId>timescaledb</artifactId>
-            <version>2.16.1</version>
-        </dependency>
-
         <!-- Test -->
         <dependency>
             <groupId>io.quarkus</groupId>
