@@ -12,7 +12,7 @@ services:
   mosquitto:
     ports:
       - "1883:1883"
-      - "9001:9001"  # WebSocket port for debugging
+      - "9080:9001"  # WebSocket port for debugging
 
   keycloak:
     ports:
