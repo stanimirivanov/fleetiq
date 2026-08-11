@@ -1,8 +1,6 @@
 # Development overrides — used automatically with docker compose
 # Adds development conveniences: debug ports, live reload mounts, relaxed security
 
-version: "3.9"
-
 services:
   postgres:
     ports:
