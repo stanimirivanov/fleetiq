@@ -1,0 +1,17 @@
+# Dev-specific ingress/gateway configuration
+# Minimal config for local development
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: fleetiq-gateway
+  namespace: fleetiq
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ── PostgreSQL with Extensions ──────────────────────────
   postgres:
@@ -47,7 +45,7 @@ services:
 
   # ── Keycloak ───────────────────────────────────────────
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
+    image: quay.io/keycloak/keycloak:26.0
     container_name: fleetiq-keycloak
     ports:
       - "8080:8080"
@@ -81,7 +79,7 @@ services:
 
   # ── Observability Stack ───────────────────────────────
   prometheus:
-    image: prom/prometheus:v2.54
+    image: prom/prometheus:v2.54.0
     container_name: fleetiq-prometheus
     ports:
       - "9090:9090"
@@ -94,7 +92,7 @@ services:
       - fleetiq-net
 
   tempo:
-    image: grafana/tempo:2.6
+    image: grafana/tempo:2.6.1
     container_name: fleetiq-tempo
     ports:
       - "4317:4317"   # OTLP gRPC
@@ -106,7 +104,7 @@ services:
       - fleetiq-net
 
   loki:
-    image: grafana/loki:3.2
+    image: grafana/loki:3.2.2
     container_name: fleetiq-loki
     ports:
       - "3100:3100"
@@ -115,7 +113,7 @@ services:
       - fleetiq-net
 
   grafana:
-    image: grafana/grafana:11.2
+    image: grafana/grafana:11.2.0
     container_name: fleetiq-grafana
     ports:
       - "3000:3000"
@@ -135,7 +133,7 @@ services:
 
   # ── OpenTelemetry Collector ────────────────────────────
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.111
+    image: otel/opentelemetry-collector-contrib:0.111.0
     container_name: fleetiq-otel-collector
     ports:
       - "4319:4317"   # OTLP gRPC receiver (different host port to avoid clash)
