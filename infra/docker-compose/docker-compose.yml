@@ -36,7 +36,7 @@ services:
     container_name: fleetiq-mosquitto
     ports:
       - "1883:1883"
-      - "9001:9001"
+      - "9080:9001"
     volumes:
       - mosquitto_data:/mosquitto/data
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
