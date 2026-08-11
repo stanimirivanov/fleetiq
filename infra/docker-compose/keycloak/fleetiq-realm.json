@@ -1,0 +1,65 @@
+{
+  "realm": "fleetiq",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      { "name": "device", "description": "IoT device role" },
+      { "name": "operator", "description": "Fleet operator role" },
+      { "name": "service", "description": "Internal service role" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fleetiq-services",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "fleetiq-service-secret-change-in-production",
+      "defaultRoles": ["service"]
+    },
+    {
+      "clientId": "fleetiq-devices",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "fleetiq-device-secret-change-in-production",
+      "defaultRoles": ["device"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "FleetIQ",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin"
+        }
+      ],
+      "realmRoles": ["operator", "service"]
+    }
+  ]
+}
