@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fleetiq
+
+resources:
+  - ../../base
+
+# Dev-specific patches
+patchesStrategicMerge:
+  - patches/reduce-replicas.yaml
+  - patches/dev-resources.yaml
+  - patches/dev-ingress.yaml
+
+# Update images for dev
+images:
+  - name: ghcr.io/fleetiq/telemetry-ingestion
+    newTag: dev
+  - name: ghcr.io/fleetiq/device-registry
+    newTag: dev
+  - name: ghcr.io/fleetiq/fleet-topology
+    newTag: dev
+  - name: ghcr.io/fleetiq/maintenance-predictor
+    newTag: dev
+  - name: ghcr.io/fleetiq/streaming-hub
+    newTag: dev
+  - name: ghcr.io/fleetiq/pekko-cluster
+    newTag: dev

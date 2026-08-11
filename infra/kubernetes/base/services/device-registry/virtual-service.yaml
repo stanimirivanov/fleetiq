@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: device-registry-vs
+  namespace: fleetiq
+spec:
+  hosts:
+    - device-registry.fleetiq.svc.cluster.local
+  http:
+    - match:
+        - port: 9002
+      route:
+        - destination:
+            host: device-registry.fleetiq.svc.cluster.local
+            port:
+              number: 9002
+      timeout: 5s
+      retries:
+        attempts: 3
+        perTryTimeout: 2s

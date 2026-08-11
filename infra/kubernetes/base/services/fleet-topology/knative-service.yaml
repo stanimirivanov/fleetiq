@@ -1,0 +1,46 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: fleet-topology
+  namespace: fleetiq
+  labels:
+    app: fleet-topology
+    component: topology
+  annotations:
+    autoscaling.knative.dev/min-scale: "0"
+    autoscaling.knative.dev/max-scale: "5"
+    autoscaling.knative.dev/target: "30"
+    autoscaling.knative.dev/scale-down-delay: "2m"
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: fleet-topology
+      containers:
+        - image: ghcr.io/fleetiq/fleet-topology:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+              name: http
+            - containerPort: 9003
+              name: grpc
+          env:
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: username
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: password
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

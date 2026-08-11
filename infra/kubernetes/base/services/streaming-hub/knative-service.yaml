@@ -1,0 +1,35 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: streaming-hub
+  namespace: fleetiq
+  labels:
+    app: streaming-hub
+    component: streaming
+  annotations:
+    autoscaling.knative.dev/min-scale: "0"
+    autoscaling.knative.dev/max-scale: "5"
+    autoscaling.knative.dev/target: "200"
+    autoscaling.knative.dev/scale-down-delay: "5m"
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: streaming-hub
+      containers:
+        - image: ghcr.io/fleetiq/streaming-hub:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8085
+              name: http
+            - containerPort: 9005
+              name: grpc
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
