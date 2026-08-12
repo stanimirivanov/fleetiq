@@ -22,10 +22,11 @@ public class VehicleSimulator {
 
     private static final Logger log = LoggerFactory.getLogger(VehicleSimulator.class);
     private final List<SimulatedVehicle> vehicles = new ArrayList<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Inject
     MqttClientManager mqttManager;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     void onStart(@Observes StartupEvent ev) {
         log.info("Vehicle Simulator starting...");

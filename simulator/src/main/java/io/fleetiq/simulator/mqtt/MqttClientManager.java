@@ -1,43 +1,30 @@
 package io.fleetiq.simulator.mqtt;
 
-import io.quarkus.runtime.StartupEvent;
+import io.netty.handler.codec.mqtt.MqttQoS;
+import io.smallrye.reactive.messaging.mqtt.MqttMessage;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.nio.charset.StandardCharsets;
 
 @ApplicationScoped
 public class MqttClientManager {
 
     private static final Logger log = LoggerFactory.getLogger(MqttClientManager.class);
 
-    @ConfigProperty(name = "mqtt.broker.host", defaultValue = "localhost")
-    String brokerHost;
-
-    @ConfigProperty(name = "mqtt.broker.port", defaultValue = "1883")
-    int brokerPort;
-
-    private final ConcurrentMap<String, Boolean> connectedVehicles = new ConcurrentHashMap<>();
-
-    void onStart(@Observes StartupEvent ev) {
-        log.info("MQTT Client Manager initialized — broker: {}:{}", brokerHost, brokerPort);
-    }
+    @Channel("telemetry-out")
+    Emitter<byte[]> emitter;
 
     public void publishTelemetry(String vin, String jsonPayload) {
-        log.info("[MQTT] {} -> fleetiq/{}/telemetry", vin, vin);
-        log.debug("[MQTT] Payload: {}", jsonPayload);
-        connectedVehicles.putIfAbsent(vin, true);
-    }
-
-    public void publishCommandResponse(String vin, String responseJson) {
-        log.info("[MQTT] {} -> fleetiq/{}/command/response", vin, vin);
-    }
-
-    public boolean isConnected(String vin) {
-        return connectedVehicles.getOrDefault(vin, false);
+        String topic = "fleetiq/" + vin + "/telemetry";
+        emitter.send(MqttMessage.of(
+            topic,
+            jsonPayload.getBytes(StandardCharsets.UTF_8),
+            MqttQoS.AT_LEAST_ONCE
+        ));
+        log.debug("Published telemetry to {}", topic);
     }
 }
