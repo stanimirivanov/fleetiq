@@ -1,16 +1,15 @@
 package io.fleetiq.device.adapter.outbound.persistence;
 
 import io.fleetiq.device.domain.model.Device;
+import io.fleetiq.device.domain.model.DeviceStatus;
 import io.fleetiq.device.domain.port.outbound.DeviceRepository;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
-@Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
 public class PostgresDeviceRepository implements DeviceRepository {
@@ -30,27 +29,19 @@ public class PostgresDeviceRepository implements DeviceRepository {
         DeviceEntity entity = mapper.toEntity(device);
 
         return Panache.withTransaction(entity::persist)
-            .map(persisted ->
-                mapper.toDomain((DeviceEntity) persisted)
-            )
-            .onFailure().invoke(e ->
-                log.error("Failed to save device: {}", device.vin(), e)
-            );
+            .map(DeviceEntity.class::cast)
+            .map(mapper::toDomain);
     }
 
     @Override
-    public Uni<Device> updateStatus(String vin, String status) {
+    public Uni<Optional<Device>> updateStatus(String vin, DeviceStatus status) {
         return Panache.withTransaction(() ->
                 DeviceEntity.<DeviceEntity>findById(vin)
                     .onItem().ifNotNull().invoke(entity -> {
-                        // Dirty checking - updates when transaction completes
-                        entity.status = status;
+                        entity.status = status.name();
                     })
             )
-            .onItem().ifNotNull().transform(mapper::toDomain)
-            .onItem().ifNull().failWith(() ->
-                new IllegalArgumentException("Device not found: " + vin)
-            );
+            .map(entity -> Optional.ofNullable(entity).map(mapper::toDomain));
     }
 
 }
