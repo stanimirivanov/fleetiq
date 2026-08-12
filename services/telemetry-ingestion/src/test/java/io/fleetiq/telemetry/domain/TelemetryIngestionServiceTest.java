@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,8 +21,7 @@ class TelemetryIngestionServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Stub repository that does nothing
-        TelemetryRepository repository = sample -> {};
+        TelemetryRepository repository = new InMemoryTelemetryRepository();
         service = new TelemetryIngestionService(repository);
     }
 
@@ -34,7 +34,8 @@ class TelemetryIngestionServiceTest {
             65.0, 50.0, 95.0, 12.8, Map.of()
         );
 
-        IngestTelemetryUseCase.IngestResult result = service.ingest(sample);
+        IngestTelemetryUseCase.IngestResult result = service.ingest(sample)
+            .await().indefinitely();
 
         assertTrue(result.accepted());
         assertEquals("Telemetry accepted", result.message());
@@ -54,8 +55,29 @@ class TelemetryIngestionServiceTest {
             30.0, 40.0, 85.0, 11.5, metrics
         );
 
-        IngestTelemetryUseCase.IngestResult result = service.ingest(sample);
+        IngestTelemetryUseCase.IngestResult result = service.ingest(sample)
+            .await().indefinitely();
 
         assertTrue(result.accepted());
+    }
+
+    private static final class InMemoryTelemetryRepository implements TelemetryRepository {
+
+        @Override
+        public io.smallrye.mutiny.Uni<Void> save(TelemetrySample sample) {
+            return io.smallrye.mutiny.Uni.createFrom().voidItem();
+        }
+
+        @Override
+        public io.smallrye.mutiny.Uni<List<TelemetrySample>> findByVinAndTimeRange(
+            String vin, Instant from, Instant to
+        ) {
+            return io.smallrye.mutiny.Uni.createFrom().item(List.of());
+        }
+
+        @Override
+        public io.smallrye.mutiny.Uni<Double> getAverageSpeed(String vin, Instant from, Instant to) {
+            return io.smallrye.mutiny.Uni.createFrom().item(0.0);
+        }
     }
 }
