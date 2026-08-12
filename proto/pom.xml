@@ -57,52 +57,40 @@
             </extension>
         </extensions>
         <plugins>
-            <!-- Generate standard gRPC stubs -->
+            <!-- Generate protobuf messages plus standard and Mutiny gRPC stubs. -->
             <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>${protobuf-maven-plugin.version}</version>
                 <configuration>
-                    <protocArtifact>
-                        com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}
-                    </protocArtifact>
-                    <pluginId>grpc-java</pluginId>
-                    <pluginArtifact>
-                        io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
-                    </pluginArtifact>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+                    <protocPlugins>
+                        <protocPlugin>
+                            <id>quarkus-grpc-protoc-plugin</id>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                            <version>${quarkus.version}</version>
+                            <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
+                        </protocPlugin>
+                    </protocPlugins>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>generate-standard-stubs</id>
+                        <id>generate-protobuf-messages</id>
                         <goals>
                             <goal>compile</goal>
-                            <goal>compile-custom</goal>
                         </goals>
                     </execution>
-                </executions>
-            </plugin>
-
-            <!-- Generate Mutiny gRPC stubs only -->
-            <plugin>
-                <groupId>org.xolstice.maven.plugins</groupId>
-                <artifactId>protobuf-maven-plugin</artifactId>
-                <version>${protobuf-maven-plugin.version}</version>
-                <configuration>
-                    <protocArtifact>
-                        com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}
-                    </protocArtifact>
-                    <pluginId>mutiny-grpc</pluginId>
-                    <pluginArtifact>
-                        io.quarkus:quarkus-grpc-protoc-plugin:${quarkus.version}:exe:${os.detected.classifier}
-                    </pluginArtifact>
-                    <outputDirectory>${project.build.directory}/generated-sources/mutiny-grpc</outputDirectory>
-                </configuration>
-                <executions>
                     <execution>
-                        <id>generate-mutiny-stubs</id>
+                        <id>generate-standard-grpc</id>
                         <goals>
                             <goal>compile-custom</goal>
                         </goals>
+                        <configuration>
+                            <pluginId>grpc-java</pluginId>
+                            <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                            <outputDirectory>${project.build.directory}/generated-sources/grpc-java</outputDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

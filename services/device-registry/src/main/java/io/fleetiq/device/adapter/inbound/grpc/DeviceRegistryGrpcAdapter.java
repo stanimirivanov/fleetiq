@@ -1,14 +1,21 @@
 package io.fleetiq.device.adapter.inbound.grpc;
 
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase;
-import io.fleetiq.proto.device.v1.DeviceRegistryGrpc;
+import io.fleetiq.proto.device.v1.MutinyDeviceRegistryGrpc;
+import io.fleetiq.proto.device.v1.GetDeviceRequest;
+import io.fleetiq.proto.device.v1.GetDeviceResponse;
+import io.fleetiq.proto.device.v1.RegisterDeviceRequest;
+import io.fleetiq.proto.device.v1.RegisterDeviceResponse;
+import io.fleetiq.proto.device.v1.UpdateDeviceStatusRequest;
+import io.fleetiq.proto.device.v1.UpdateDeviceStatusResponse;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @GrpcService
-public class DeviceRegistryGrpcAdapter extends DeviceRegistryGrpc.DeviceRegistryImplBase {
+public class DeviceRegistryGrpcAdapter extends MutinyDeviceRegistryGrpc.DeviceRegistryImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(DeviceRegistryGrpcAdapter.class);
 
@@ -16,36 +23,21 @@ public class DeviceRegistryGrpcAdapter extends DeviceRegistryGrpc.DeviceRegistry
     DeviceRegistryUseCase useCase;
 
     @Override
-    public void registerDevice(
-        io.fleetiq.proto.device.v1.RegisterDeviceRequest request,
-        io.grpc.stub.StreamObserver<io.fleetiq.proto.device.v1.RegisterDeviceResponse> responseObserver
-    ) {
+    public Uni<RegisterDeviceResponse> registerDevice(RegisterDeviceRequest request) {
         log.debug("gRPC register device: {}", request.getVin());
         // Placeholder — full implementation in Phase 1
-        var response = io.fleetiq.proto.device.v1.RegisterDeviceResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        return Uni.createFrom().item(RegisterDeviceResponse.newBuilder().build());
     }
 
     @Override
-    public void getDevice(
-        io.fleetiq.proto.device.v1.GetDeviceRequest request,
-        io.grpc.stub.StreamObserver<io.fleetiq.proto.device.v1.GetDeviceResponse> responseObserver
-    ) {
+    public Uni<GetDeviceResponse> getDevice(GetDeviceRequest request) {
         log.debug("gRPC get device: {}", request.getVin());
-        var response = io.fleetiq.proto.device.v1.GetDeviceResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        return Uni.createFrom().item(GetDeviceResponse.newBuilder().build());
     }
 
     @Override
-    public void updateDeviceStatus(
-        io.fleetiq.proto.device.v1.UpdateDeviceStatusRequest request,
-        io.grpc.stub.StreamObserver<io.fleetiq.proto.device.v1.UpdateDeviceStatusResponse> responseObserver
-    ) {
+    public Uni<UpdateDeviceStatusResponse> updateDeviceStatus(UpdateDeviceStatusRequest request) {
         log.debug("gRPC update status: {}", request.getVin());
-        var response = io.fleetiq.proto.device.v1.UpdateDeviceStatusResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        return Uni.createFrom().item(UpdateDeviceStatusResponse.newBuilder().build());
     }
 }
