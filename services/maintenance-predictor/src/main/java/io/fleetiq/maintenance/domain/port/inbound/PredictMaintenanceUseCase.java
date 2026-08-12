@@ -1,21 +1,13 @@
 package io.fleetiq.maintenance.domain.port.inbound;
 
 import io.fleetiq.maintenance.domain.model.MaintenanceRecord;
+import io.fleetiq.maintenance.domain.model.PredictionResult;
+import io.smallrye.mutiny.Uni;
+
 import java.util.List;
 
 public interface PredictMaintenanceUseCase {
-
-    record PredictionResult(
-        String predictionId,
-        String vin,
-        double failureProbability,
-        String predictedComponent,
-        int estimatedDaysUntilFailure,
-        String recommendation,
-        List<String> evidenceIds
-    ) {}
-
-    PredictionResult predict(String vin, int lookbackDays);
-    void recordEvent(MaintenanceRecord record);
-    List<PredictionResult> getHistory(String vin, int limit);
+    Uni<PredictionResult> predict(String vin, int lookbackDays);
+    Uni<MaintenanceRecord> recordEvent(MaintenanceRecord record);
+    Uni<List<PredictionResult>> getHistory(String vin, int limit);
 }

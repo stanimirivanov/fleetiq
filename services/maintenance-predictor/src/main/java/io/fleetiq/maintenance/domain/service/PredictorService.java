@@ -1,42 +1,49 @@
 package io.fleetiq.maintenance.domain.service;
 
 import io.fleetiq.maintenance.domain.model.MaintenanceRecord;
+import io.fleetiq.maintenance.domain.model.PredictionResult;
 import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase;
 import io.fleetiq.maintenance.domain.port.outbound.MaintenanceRepository;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
+@Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class PredictorService implements PredictMaintenanceUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(PredictorService.class);
     private final MaintenanceRepository repository;
 
-    public PredictorService(MaintenanceRepository repository) {
-        this.repository = repository;
-    }
-
     @Override
-    public PredictionResult predict(String vin, int lookbackDays) {
-        log.debug("Predicting maintenance for VIN: {}, lookback: {} days", vin, lookbackDays);
-        // Placeholder — AI integration in Phase 4
-        return new PredictionResult(
-            "placeholder-id", vin, 0.0, "unknown",
-            999, "AI prediction not yet implemented", List.of()
+    public Uni<PredictionResult> predict(String vin, int lookbackDays) {
+        log.info("Predicting maintenance for VIN: {}, lookback: {} days", vin, lookbackDays);
+        // AI integration in Phase 4 — placeholder for now
+        return Uni.createFrom().item(() ->
+            new PredictionResult(
+                UUID.randomUUID(),
+                vin,
+                0.0,
+                "unknown",
+                999,
+                "AI prediction not yet implemented",
+                List.of()
+            )
         );
     }
 
     @Override
-    public void recordEvent(MaintenanceRecord record) {
-        log.debug("Recording maintenance event: {}", record.eventId());
-        repository.saveEvent(record);
+    public Uni<MaintenanceRecord> recordEvent(MaintenanceRecord record) {
+        log.info("Recording maintenance event for VIN: {}", record.vin());
+        return repository.saveEvent(record);
     }
 
     @Override
-    public List<PredictionResult> getHistory(String vin, int limit) {
+    public Uni<List<PredictionResult>> getHistory(String vin, int limit) {
         return repository.findPredictionsByVin(vin, limit);
     }
 }

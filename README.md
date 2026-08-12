@@ -136,28 +136,27 @@ graph LR
 ### **Start Development Environment**
 
 ```bash
-*\# Clone and build*  
+# Clone and build
 git clone https://github.com/your-org/fleetiq.git  
 cd fleetiq  
-mvn install \-DskipTests
+mvn install -DskipTests
 
-*\# Start infrastructure*  
+# Start infrastructure
 cd infra/docker-compose  
-docker compose up \-d
+docker compose up -d
 
-*\# Start services (each in a separate terminal)*  
+# Start services (each in a separate terminal)*  
 cd services/telemetry-ingestion  
-mvn quarkus:dev \-Dquarkus.test.continuous-testing\=disabled
+mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled
 
 cd services/device-registry  
-mvn quarkus:dev \-Dquarkus.test.continuous-testing\=disabled
+mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled
 
-*\# ... repeat for other services*
+# ... repeat for other services
 
-*\# Start simulator*  
+# Start simulator  
 cd simulator
-
-mvn quarkus:dev \-Dquarkus.test.continuous-testing\=disabled
+mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled
 ```
 
 ### **Access Services**

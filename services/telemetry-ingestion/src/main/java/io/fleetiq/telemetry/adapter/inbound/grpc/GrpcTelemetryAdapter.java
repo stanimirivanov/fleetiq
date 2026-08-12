@@ -1,61 +1,62 @@
 package io.fleetiq.telemetry.adapter.inbound.grpc;
 
-import io.fleetiq.proto.telemetry.v1.TelemetryIngestionGrpc;
-import io.fleetiq.proto.telemetry.v1.IngestTelemetryRequest;
-import io.fleetiq.proto.telemetry.v1.IngestTelemetryResponse;
-import io.fleetiq.proto.telemetry.v1.IngestBatchResponse;
-import io.fleetiq.proto.telemetry.v1.TelemetrySample;
+import io.fleetiq.proto.telemetry.v1.*;
 import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase;
-import io.grpc.stub.StreamObserver;
+import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase.IngestResult;
 import io.quarkus.grpc.GrpcService;
-import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @GrpcService
-public class GrpcTelemetryAdapter extends TelemetryIngestionGrpc.TelemetryIngestionImplBase {
+@RequiredArgsConstructor
+public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.TelemetryIngestionImplBase {
 
-    private static final Logger log = LoggerFactory.getLogger(GrpcTelemetryAdapter.class);
-
-    @Inject
-    IngestTelemetryUseCase useCase;
+    private final IngestTelemetryUseCase useCase;
+    private final TelemetryGrpcMapper mapper;
 
     @Override
-    public void ingestTelemetry(IngestTelemetryRequest request, StreamObserver<IngestTelemetryResponse> responseObserver) {
-        log.debug("gRPC ingest telemetry: {}", request.getSample().getVin());
-        var response = IngestTelemetryResponse.newBuilder()
-            .setAccepted(true)
-            .setMessage("Accepted via gRPC")
-            .build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+    public Uni<IngestTelemetryResponse> ingestTelemetry(IngestTelemetryRequest request) {
+        var sample = mapper.toDomain(request.getSample());
+
+        return useCase.ingest(sample)
+            .map(result -> IngestTelemetryResponse.newBuilder()
+                .setAccepted(result.accepted())
+                .setMessage(result.message())
+                .build());
     }
 
     @Override
-    public StreamObserver<TelemetrySample> ingestBatch(StreamObserver<IngestBatchResponse> responseObserver) {
-        log.debug("gRPC ingest batch stream opened");
-        return new StreamObserver<>() {
-            int count = 0;
+    public Uni<IngestBatchResponse> ingestBatch(Multi<io.fleetiq.proto.telemetry.v1.TelemetrySample> requestStream) {
+        return requestStream
+            .onItem().transform(mapper::toDomain)
+            // ✅ Concatenate processes incoming items sequentially with backpressure controls
+            .onItem().transformToUniAndConcatenate(useCase::ingest)
+            // ✅ Accumulate stream results safely without multi-threading race conditions
+            .collect().in(BatchAccumulator::new, BatchAccumulator::accumulate)
+            .map(BatchAccumulator::toResponse);
+    }
 
-            @Override
-            public void onNext(TelemetrySample sample) {
-                count++;
-                log.debug("Batch sample: {}", sample.getVin());
-            }
+    // Helper accumulator for thread-safe stream reduction
+    private static class BatchAccumulator {
+        private int accepted = 0;
+        private int rejected = 0;
 
-            @Override
-            public void onError(Throwable t) {
-                log.error("Batch stream error", t);
+        public void accumulate(IngestResult result) {
+            if (result.accepted()) {
+                accepted++;
+            } else {
+                rejected++;
             }
+        }
 
-            @Override
-            public void onCompleted() {
-                var response = IngestBatchResponse.newBuilder()
-                    .setAcceptedCount(count)
-                    .build();
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-            }
-        };
+        public IngestBatchResponse toResponse() {
+            return IngestBatchResponse.newBuilder()
+                .setAcceptedCount(accepted)
+                .setRejectedCount(rejected)
+                .build();
+        }
     }
 }

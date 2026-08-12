@@ -1,46 +1,50 @@
 package io.fleetiq.device.domain.service;
 
 import io.fleetiq.device.domain.model.Device;
+import io.fleetiq.device.domain.model.DeviceStatus;
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase;
 import io.fleetiq.device.domain.port.outbound.DeviceRepository;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-import java.time.Instant;
-import java.util.Map;
+import java.util.Optional;
 
+@Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class DeviceRegistryService implements DeviceRegistryUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(DeviceRegistryService.class);
     private final DeviceRepository repository;
 
-    public DeviceRegistryService(DeviceRepository repository) {
-        this.repository = repository;
-    }
-
     @Override
-    public Device register(RegisterCommand command) {
-        log.debug("Registering device: {}", command.vin());
-        var device = new Device(
-            command.vin(), command.deviceType(), command.manufacturer(),
-            command.model(), command.year(), command.capabilities(),
-            "IDLE", Instant.now(), Instant.now()
+    public Uni<Device> register(RegisterCommand command) {
+        log.info("Registering device: {}", command.vin());
+
+        // Domain model handles default status & initial state
+        Device newDevice = Device.registerNew(
+            command.vin(),
+            command.deviceType(),
+            command.manufacturer(),
+            command.model(),
+            command.year(),
+            command.capabilities()
         );
-        repository.save(device);
-        return device;
+
+        return repository.save(newDevice)
+            .invoke(d -> log.info("Device registered successfully: {}", d.vin()));
     }
 
     @Override
-    public Device getByVin(String vin) {
-        return repository.findByVin(vin)
-            .orElseThrow(() -> new IllegalArgumentException("Device not found: " + vin));
+    public Uni<Optional<Device>> getByVin(String vin) {
+        return repository.findByVin(vin);
     }
 
     @Override
-    public Device updateStatus(String vin, String status) {
-        repository.updateStatus(vin, status);
-        return getByVin(vin);
+    public Uni<Device> updateStatus(String vin, String status) {
+        log.info("Updating device status: {} -> {}", vin, status);
+        // TODO: Validate or parse string to DeviceStatus enum here if needed
+        return repository.updateStatus(vin, status);
     }
 }
