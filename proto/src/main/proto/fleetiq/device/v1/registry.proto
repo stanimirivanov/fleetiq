@@ -13,6 +13,14 @@ service DeviceRegistry {
     rpc UpdateDeviceStatus(UpdateDeviceStatusRequest) returns (UpdateDeviceStatusResponse);
 }
 
+enum DeviceStatus {
+    DEVICE_STATUS_UNSPECIFIED = 0;
+    DEVICE_STATUS_IDLE = 1;
+    DEVICE_STATUS_ACTIVE = 2;
+    DEVICE_STATUS_MAINTENANCE = 3;
+    DEVICE_STATUS_DECOMMISSIONED = 4;
+}
+
 message Device {
     string vin = 1;
     string device_type = 2;
@@ -20,7 +28,7 @@ message Device {
     string model = 4;
     int32 year = 5;
     map<string, string> capabilities = 6;
-    fleetiq.common.v1.VehicleStatus status = 7;
+    DeviceStatus status = 7;
     fleetiq.common.v1.Timestamp registered_at = 8;
 }
 
@@ -40,6 +48,6 @@ message GetDeviceResponse { Device device = 1; }
 
 message UpdateDeviceStatusRequest {
     string vin = 1;
-    fleetiq.common.v1.VehicleStatus status = 2;
+    DeviceStatus status = 2;
 }
 message UpdateDeviceStatusResponse { Device device = 1; }
