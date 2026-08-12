@@ -7,28 +7,36 @@ import io.fleetiq.proto.streaming.v1.WatchVehicleRequest;
 import io.fleetiq.streaming.domain.port.inbound.StreamingUseCase;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
-import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+
+import java.time.Duration;
+import java.util.Set;
 
 @GrpcService
+@RequiredArgsConstructor
 public class GrpcStreamingAdapter extends MutinyFleetStreamingGrpc.FleetStreamingImplBase {
 
-    private static final Logger log = LoggerFactory.getLogger(GrpcStreamingAdapter.class);
-
-    @Inject
-    StreamingUseCase useCase;
+    private final StreamingUseCase useCase;
+    private final GrpcPositionMapper mapper;
 
     @Override
     public Multi<PositionUpdate> watchFleet(WatchFleetRequest request) {
-        log.debug("gRPC watch fleet — streaming not yet implemented");
-        // Server streaming will be implemented in Phase 1
-        return Multi.createFrom().empty();
+        return useCase.watchFleet(
+                Set.copyOf(request.getVinsList()), interval(request.getMinUpdateIntervalSeconds()))
+            .map(mapper::toProto);
     }
 
     @Override
     public Multi<PositionUpdate> watchVehicle(WatchVehicleRequest request) {
-        log.debug("gRPC watch vehicle: {}", request.getVin());
-        return Multi.createFrom().empty();
+        return useCase.watchVehicle(
+                request.getVin(), interval(request.getMinUpdateIntervalSeconds()))
+            .map(mapper::toProto);
+    }
+
+    private Duration interval(double seconds) {
+        if (!Double.isFinite(seconds) || seconds < 0) {
+            throw new IllegalArgumentException("Minimum update interval must be finite and non-negative");
+        }
+        return Duration.ofMillis(Math.round(seconds * 1_000));
     }
 }
