@@ -1,8 +1,11 @@
 package io.fleetiq.telemetry.domain.model;
 
+import lombok.Builder;
+
 import java.time.Instant;
 import java.util.Map;
 
+@Builder
 public record TelemetrySample(
     String vin,
     Instant timestamp,

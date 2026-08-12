@@ -4,20 +4,17 @@ import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class MqttTelemetryAdapter {
 
-    private static final Logger log = LoggerFactory.getLogger(MqttTelemetryAdapter.class);
-
-    @Inject
-    IngestTelemetryUseCase useCase;
+    private final IngestTelemetryUseCase useCase;
 
     void onStart(@Observes StartupEvent ev) {
-        log.info("MQTT Telemetry Adapter initialized");
-        // Full MQTT subscriber registration in Phase 1
+        log.info("MQTT Telemetry Adapter initialized — will subscribe to fleetiq/+/telemetry");
     }
 }

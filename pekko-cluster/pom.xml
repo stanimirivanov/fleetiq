@@ -37,13 +37,17 @@
             <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-persistence-typed_${scala.binary.version}</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.pekko</groupId>
-            <artifactId>pekko-persistence-jdbc_${scala.binary.version}</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.pekko</groupId>-->
+<!--            <artifactId>pekko-persistence-jdbc_${scala.binary.version}</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-serialization-jackson_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-slf4j_${scala.binary.version}</artifactId>
         </dependency>
 
         <!-- JDBC -->
@@ -53,16 +57,10 @@
             <version>${postgresql.version}</version>
         </dependency>
 
-        <!-- Logging -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.5.12</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.16</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Test -->

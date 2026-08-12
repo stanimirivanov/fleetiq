@@ -26,7 +26,7 @@ public class TestProfiles {
             POSTGRES.start();
 
             return Map.of(
-                "quarkus.datasource.jdbc.url", POSTGRES.getJdbcUrl(),
+                "quarkus.datasource.reactive.url", POSTGRES.getJdbcUrl(),
                 "quarkus.datasource.username", POSTGRES.getUsername(),
                 "quarkus.datasource.password", POSTGRES.getPassword(),
                 "quarkus.datasource.devservices.enabled", "false"

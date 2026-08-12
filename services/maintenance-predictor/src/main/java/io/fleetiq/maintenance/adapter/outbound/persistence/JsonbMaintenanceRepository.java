@@ -1,49 +1,70 @@
 package io.fleetiq.maintenance.adapter.outbound.persistence;
 
 import io.fleetiq.maintenance.domain.model.MaintenanceRecord;
-import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase.PredictionResult;
+import io.fleetiq.maintenance.domain.model.PredictionResult;
 import io.fleetiq.maintenance.domain.port.outbound.MaintenanceRepository;
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.panache.common.Sort;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-import javax.sql.DataSource;
-import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class JsonbMaintenanceRepository implements MaintenanceRepository {
 
-    private static final Logger log = LoggerFactory.getLogger(JsonbMaintenanceRepository.class);
-    private final DataSource dataSource;
+    private final MaintenanceMapper mapper;
 
-    public JsonbMaintenanceRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+    @Override
+    public Uni<MaintenanceRecord> saveEvent(MaintenanceRecord record) {
+        MaintenanceEventEntity entity = mapper.toEntity(record);
+
+        return Panache.withTransaction(entity::persist)
+            .map(persisted ->
+                mapper.toDomain((MaintenanceEventEntity) persisted)
+            )
+            .onFailure().invoke(e ->
+                log.error("Failed to save maintenance event for VIN: {}", record.vin(), e)
+            );
     }
 
     @Override
-    public void saveEvent(MaintenanceRecord record) {
-        log.debug("Saving maintenance event as JSONB: {}", record.eventId());
+    public Uni<PredictionResult> savePrediction(PredictionResult prediction) {
+        PredictionEntity entity = mapper.toEntity(prediction);
+
+        return Panache.withTransaction(entity::persist)
+            .map(persisted ->
+                mapper.toDomain((PredictionEntity) persisted)
+            )
+            .onFailure().invoke(e ->
+                log.error("Failed to save prediction for VIN: {}", prediction.vin(), e)
+            );
     }
 
     @Override
-    public void savePrediction(PredictionResult prediction) {
-        log.debug("Saving prediction: {}", prediction.predictionId());
+    public Uni<List<MaintenanceRecord>> findEventsByVin(String vin) {
+        return MaintenanceEventEntity.<MaintenanceEventEntity>find("vin", Sort.by("occurredAt").descending(), vin)
+            .list()
+            .map(entities ->
+                entities.stream()
+                .map(mapper::toDomain)
+                .toList()
+            );
     }
 
     @Override
-    public List<MaintenanceRecord> findEventsByVin(String vin) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<PredictionResult> findPredictionsByVin(String vin, int limit) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<MaintenanceRecord> findSimilarEvents(double[] embedding, int limit) {
-        log.debug("pgvector similarity search, limit: {}", limit);
-        return Collections.emptyList();
+    public Uni<List<PredictionResult>> findPredictionsByVin(String vin, int limit) {
+        return PredictionEntity.<PredictionEntity>find("vin", Sort.by("generatedAt").descending(), vin)
+            .page(0, limit)
+            .list()
+            .map(entities ->
+                entities.stream()
+                .map(mapper::toDomain)
+                .toList()
+            );
     }
 }

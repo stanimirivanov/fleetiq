@@ -1,50 +1,45 @@
 package io.fleetiq.maintenance.adapter.inbound.grpc;
 
 import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase;
-import io.fleetiq.proto.maintenance.v1.MaintenancePredictorGrpc;
+import io.fleetiq.proto.maintenance.v1.*;
+import io.smallrye.mutiny.Uni;
 import io.quarkus.grpc.GrpcService;
-import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @GrpcService
-public class MaintenanceGrpcAdapter extends MaintenancePredictorGrpc.MaintenancePredictorImplBase {
+@RequiredArgsConstructor
+public class MaintenanceGrpcAdapter extends MutinyMaintenancePredictorGrpc.MaintenancePredictorImplBase {
 
-    private static final Logger log = LoggerFactory.getLogger(MaintenanceGrpcAdapter.class);
-
-    @Inject
-    PredictMaintenanceUseCase useCase;
+    private final PredictMaintenanceUseCase useCase;
+    private final GrpcMaintenanceMapper mapper;
 
     @Override
-    public void predictMaintenance(
-        io.fleetiq.proto.maintenance.v1.PredictMaintenanceRequest request,
-        io.grpc.stub.StreamObserver<io.fleetiq.proto.maintenance.v1.PredictMaintenanceResponse> responseObserver
-    ) {
-        log.debug("gRPC predict maintenance: {}", request.getVin());
-        var response = io.fleetiq.proto.maintenance.v1.PredictMaintenanceResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+    public Uni<PredictMaintenanceResponse> predictMaintenance(PredictMaintenanceRequest request) {
+        log.info("gRPC predict maintenance: {}", request.getVin());
+
+        return useCase.predict(request.getVin(), request.getLookbackDays())
+            .map(mapper::toProto);
     }
 
     @Override
-    public void getPredictionHistory(
-        io.fleetiq.proto.maintenance.v1.GetPredictionHistoryRequest request,
-        io.grpc.stub.StreamObserver<io.fleetiq.proto.maintenance.v1.GetPredictionHistoryResponse> responseObserver
-    ) {
+    public Uni<GetPredictionHistoryResponse> getPredictionHistory(GetPredictionHistoryRequest request) {
         log.debug("gRPC get prediction history: {}", request.getVin());
-        var response = io.fleetiq.proto.maintenance.v1.GetPredictionHistoryResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+
+        return useCase.getHistory(request.getVin(), request.getLimit())
+            .map(list -> GetPredictionHistoryResponse.newBuilder()
+                .addAllPredictions(list.stream().map(mapper::toProto).toList())
+                .build());
     }
 
     @Override
-    public void recordMaintenanceEvent(
-        io.fleetiq.proto.maintenance.v1.RecordMaintenanceEventRequest request,
-        io.grpc.stub.StreamObserver<io.fleetiq.proto.maintenance.v1.RecordMaintenanceEventResponse> responseObserver
-    ) {
-        log.debug("gRPC record maintenance event: {}", request.getVin());
-        var response = io.fleetiq.proto.maintenance.v1.RecordMaintenanceEventResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+    public Uni<RecordMaintenanceEventResponse> recordMaintenanceEvent(RecordMaintenanceEventRequest request) {
+        log.info("gRPC record maintenance event: {}", request.getVin());
+
+        var domainRecord = mapper.toDomain(request);
+
+        return useCase.recordEvent(domainRecord)
+            .map(mapper::toRecordEventResponse);
     }
 }
