@@ -7,7 +7,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,11 +14,6 @@ import java.util.List;
 public class AgeTopologyRepository implements TopologyRepository {
 
     private static final Logger log = LoggerFactory.getLogger(AgeTopologyRepository.class);
-    private final DataSource dataSource;
-
-    public AgeTopologyRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
 
     @Override
     public void createRelationship(TopologyEdge edge) {
