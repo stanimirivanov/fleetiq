@@ -1,37 +1,21 @@
 package io.fleetiq.pekko.actor;
 
+import io.fleetiq.pekko.sharding.VehicleSharding;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.japi.function.Function;
 
-public class FleetGuardian extends AbstractBehavior<FleetGuardian.Command> {
+/** Starts cluster-owned infrastructure. Vehicle entities are created only by sharding. */
+public final class FleetGuardian {
 
     public interface Command {}
 
-    public record CreateVehicle(String vin) implements Command {}
+    private FleetGuardian() {}
 
     public static Behavior<Command> create() {
-        return Behaviors.setup(FleetGuardian::new);
-    }
-
-    public FleetGuardian(ActorContext<Command> context) {
-        super(context);
-        context.getLog().info("Fleet Guardian started");
-    }
-
-    @Override
-    public Receive<Command> createReceive() {
-        return newReceiveBuilder()
-            .onMessage(CreateVehicle.class, this::onCreateVehicle)
-            .build();
-    }
-
-    private Behavior<Command> onCreateVehicle(CreateVehicle msg) {
-        getContext().getLog().info("Spawning vehicle actor: {}", msg.vin());
-        getContext().spawn(VehicleActor.create(msg.vin()), "vehicle-" + msg.vin());
-        return this;
+        return Behaviors.setup(context -> {
+            VehicleSharding.init(context.getSystem());
+            context.getLog().info("Fleet guardian started and vehicle sharding initialized");
+            return Behaviors.empty();
+        });
     }
 }
