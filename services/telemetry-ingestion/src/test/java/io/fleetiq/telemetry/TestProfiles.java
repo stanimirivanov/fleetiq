@@ -26,7 +26,8 @@ public class TestProfiles {
             POSTGRES.start();
 
             return Map.of(
-                "quarkus.datasource.reactive.url", POSTGRES.getJdbcUrl(),
+                "quarkus.datasource.jdbc.url", POSTGRES.getJdbcUrl(),
+                "quarkus.datasource.reactive.url", toReactiveUrl(POSTGRES.getJdbcUrl()),
                 "quarkus.datasource.username", POSTGRES.getUsername(),
                 "quarkus.datasource.password", POSTGRES.getPassword(),
                 "quarkus.datasource.devservices.enabled", "false"
@@ -36,6 +37,10 @@ public class TestProfiles {
         @Override
         public void stop() {
             POSTGRES.stop();
+        }
+
+        private static String toReactiveUrl(String jdbcUrl) {
+            return jdbcUrl.replaceFirst("^jdbc:", "");
         }
     }
 }
