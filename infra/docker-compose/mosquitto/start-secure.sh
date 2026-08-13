@@ -11,6 +11,8 @@ acl_file="$runtime_dir/acl"
 : "${STREAMING_HUB_PASSWORD:?STREAMING_HUB_PASSWORD is required}"
 : "${SIMULATOR_TENANT:?SIMULATOR_TENANT is required}"
 : "${SIMULATOR_PASSWORD:?SIMULATOR_PASSWORD is required}"
+: "${REFERENCE_DEVICE_VIN:?REFERENCE_DEVICE_VIN is required}"
+: "${REFERENCE_DEVICE_PASSWORD:?REFERENCE_DEVICE_PASSWORD is required}"
 
 mkdir -p "$runtime_dir"
 mosquitto_passwd -b -c "$password_file" telemetry-ingestion "$TELEMETRY_INGESTION_PASSWORD"
@@ -18,6 +20,8 @@ mosquitto_passwd -b "$password_file" device-registry "$DEVICE_REGISTRY_PASSWORD"
 mosquitto_passwd -b "$password_file" fleet-topology "$FLEET_TOPOLOGY_PASSWORD"
 mosquitto_passwd -b "$password_file" streaming-hub "$STREAMING_HUB_PASSWORD"
 mosquitto_passwd -b "$password_file" "$SIMULATOR_TENANT" "$SIMULATOR_PASSWORD"
+mosquitto_passwd -b "$password_file" \
+    "$SIMULATOR_TENANT/$REFERENCE_DEVICE_VIN" "$REFERENCE_DEVICE_PASSWORD"
 chmod 600 "$password_file"
 
 cat > "$acl_file" <<'EOF'
@@ -35,8 +39,11 @@ topic read fleetiq/events/position-projections
 user streaming-hub
 topic read fleetiq/+/+/telemetry
 
-# The simulator username is its tenant id; %u prevents cross-tenant publishing.
+# Development-only multi-vehicle simulator identity.
 pattern write fleetiq/%u/+/telemetry
+
+# Device identities use <tenant>/<vin>; the username expands to the exact topic prefix.
+pattern write fleetiq/%u/telemetry
 EOF
 chmod 600 "$acl_file"
 
