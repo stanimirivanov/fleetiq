@@ -7,7 +7,10 @@ data:
   application.properties: |
     quarkus.application.name=maintenance-predictor
     quarkus.http.port=8084
-    quarkus.grpc.server.port=9004
+    quarkus.grpc.server.use-separate-server=false
+    quarkus.oidc.auth-server-url=http://keycloak.fleetiq.svc.cluster.local:8080/realms/fleetiq
+    quarkus.oidc.client-id=fleetiq-services
+    quarkus.oidc.application-type=service
     quarkus.datasource.jdbc=false
     quarkus.datasource.reactive.url=jdbc:postgresql://postgres.fleetiq.svc.cluster.local:5432/maintenance_db
     quarkus.flyway.migrate-at-start=true

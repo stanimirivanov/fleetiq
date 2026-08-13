@@ -9,6 +9,7 @@ import io.fleetiq.proto.device.v1.RegisterDeviceRequest;
 import io.fleetiq.proto.device.v1.RegisterDeviceResponse;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusRequest;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusResponse;
+import io.fleetiq.security.TenantSecured;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
@@ -16,9 +17,12 @@ import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.security.RolesAllowed;
 
 @Slf4j
 @GrpcService
+@TenantSecured
+@RolesAllowed({"operator", "service"})
 @RequiredArgsConstructor
 public class DeviceRegistryGrpcAdapter extends MutinyDeviceRegistryGrpc.DeviceRegistryImplBase {
 

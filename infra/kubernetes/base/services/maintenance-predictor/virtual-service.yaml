@@ -8,10 +8,10 @@ spec:
     - maintenance-predictor.fleetiq.svc.cluster.local
   http:
     - match:
-        - port: 9004
+        - port: 8084
       route:
         - destination:
             host: maintenance-predictor.fleetiq.svc.cluster.local
             port:
-              number: 9004
+              number: 8084
       timeout: 120s  # AI predictions can take time

@@ -48,7 +48,10 @@ spec:
               - "cluster.local/ns/fleetiq/sa/pekko-cluster"
       to:
         - operation:
-            ports: ["9001", "9002", "9003", "9004", "9005"]  # gRPC ports
+            ports: ["8081", "8082", "8083", "8084", "8085"]
+      when:
+        - key: request.auth.claims[tenant_id]
+          values: ["*"]
 ---
 # Allow Pekko cluster internal communication
 apiVersion: security.istio.io/v1beta1

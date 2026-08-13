@@ -5,15 +5,19 @@ import io.fleetiq.proto.streaming.v1.PositionUpdate;
 import io.fleetiq.proto.streaming.v1.WatchFleetRequest;
 import io.fleetiq.proto.streaming.v1.WatchVehicleRequest;
 import io.fleetiq.streaming.domain.port.inbound.StreamingUseCase;
+import io.fleetiq.security.TenantSecured;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import lombok.RequiredArgsConstructor;
+import jakarta.annotation.security.RolesAllowed;
 
 import java.time.Duration;
 import java.util.Set;
 
 @GrpcService
 @RequiredArgsConstructor
+@TenantSecured
+@RolesAllowed({"operator", "service"})
 public class GrpcStreamingAdapter extends MutinyFleetStreamingGrpc.FleetStreamingImplBase {
 
     private final StreamingUseCase useCase;

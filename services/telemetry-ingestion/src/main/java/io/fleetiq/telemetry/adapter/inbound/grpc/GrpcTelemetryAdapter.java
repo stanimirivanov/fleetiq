@@ -3,21 +3,25 @@ package io.fleetiq.telemetry.adapter.inbound.grpc;
 import io.fleetiq.proto.telemetry.v1.*;
 import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase;
 import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase.IngestResult;
+import io.fleetiq.security.TenantSecured;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.security.RolesAllowed;
 
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor
+@TenantSecured
 public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.TelemetryIngestionImplBase {
 
     private final IngestTelemetryUseCase useCase;
     private final TelemetryGrpcMapper mapper;
 
     @Override
+    @RolesAllowed({"device", "service"})
     public Uni<IngestTelemetryResponse> ingestTelemetry(IngestTelemetryRequest request) {
         var sample = mapper.toDomain(request.getSample());
 
@@ -29,6 +33,7 @@ public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.Telemetry
     }
 
     @Override
+    @RolesAllowed({"device", "service"})
     public Uni<IngestBatchResponse> ingestBatch(Multi<io.fleetiq.proto.telemetry.v1.TelemetrySample> requestStream) {
         return requestStream
             .onItem().transform(mapper::toDomain)

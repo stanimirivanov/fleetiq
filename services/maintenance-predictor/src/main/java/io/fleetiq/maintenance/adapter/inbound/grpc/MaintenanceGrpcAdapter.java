@@ -2,14 +2,18 @@ package io.fleetiq.maintenance.adapter.inbound.grpc;
 
 import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase;
 import io.fleetiq.proto.maintenance.v1.*;
+import io.fleetiq.security.TenantSecured;
 import io.smallrye.mutiny.Uni;
 import io.quarkus.grpc.GrpcService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.security.RolesAllowed;
 
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor
+@TenantSecured
+@RolesAllowed({"operator", "service"})
 public class MaintenanceGrpcAdapter extends MutinyMaintenancePredictorGrpc.MaintenancePredictorImplBase {
 
     private final PredictMaintenanceUseCase useCase;

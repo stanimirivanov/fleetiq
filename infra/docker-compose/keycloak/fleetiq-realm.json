@@ -29,6 +29,19 @@
       "implicitFlowEnabled": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "fleetiq-service-secret-change-in-production",
+      "protocolMappers": [
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "claim.value": "fleet-default",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ],
       "defaultRoles": ["service"]
     },
     {
@@ -43,6 +56,19 @@
       "directAccessGrantsEnabled": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "fleetiq-device-secret-change-in-production",
+      "protocolMappers": [
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "claim.value": "fleet-default",
+            "jsonType.label": "String",
+            "access.token.claim": "true"
+          }
+        }
+      ],
       "defaultRoles": ["device"]
     }
   ],
