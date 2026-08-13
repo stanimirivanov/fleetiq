@@ -9,6 +9,8 @@ import io.fleetiq.proto.device.v1.RegisterDeviceRequest;
 import io.fleetiq.proto.device.v1.RegisterDeviceResponse;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusRequest;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusResponse;
+import io.fleetiq.proto.device.v1.EnrollDeviceRequest;
+import io.fleetiq.proto.device.v1.EnrollDeviceResponse;
 import io.fleetiq.security.TenantSecured;
 import io.fleetiq.security.CurrentTenant;
 import io.grpc.Status;
@@ -72,6 +74,27 @@ public class DeviceRegistryGrpcAdapter extends MutinyDeviceRegistryGrpc.DeviceRe
                 case DeviceRegistryUseCase.UpdateStatusResult.NotFound missing ->
                     Uni.createFrom().failure(Status.NOT_FOUND
                         .withDescription("Device not found: " + missing.vin())
+                        .asRuntimeException());
+            })
+            .onFailure(DeviceValidationException.class).transform(this::invalidArgument)
+            .onFailure(this::isUnexpected).invoke(this::logUnexpected)
+            .onFailure(this::isUnexpected).transform(this::internalError);
+    }
+
+    @Override
+    @RolesAllowed("operator")
+    public Uni<EnrollDeviceResponse> enrollDevice(EnrollDeviceRequest request) {
+        return Uni.createFrom().item(() -> mapper.toCommand(currentTenant.get().tenantId(), request))
+            .onItem().transformToUni(useCase::enroll)
+            .onItem().transformToUni(result -> switch (result) {
+                case DeviceRegistryUseCase.EnrollResult.Enrolled enrolled ->
+                    Uni.createFrom().item(mapper.toEnrollResponse(enrolled.username(), enrolled.secret()));
+                case DeviceRegistryUseCase.EnrollResult.NotFound missing ->
+                    Uni.createFrom().failure(Status.NOT_FOUND
+                        .withDescription("Device not found: " + missing.vin()).asRuntimeException());
+                case DeviceRegistryUseCase.EnrollResult.Decommissioned decommissioned ->
+                    Uni.createFrom().failure(Status.FAILED_PRECONDITION
+                        .withDescription("Device is decommissioned: " + decommissioned.vin())
                         .asRuntimeException());
             })
             .onFailure(DeviceValidationException.class).transform(this::invalidArgument)

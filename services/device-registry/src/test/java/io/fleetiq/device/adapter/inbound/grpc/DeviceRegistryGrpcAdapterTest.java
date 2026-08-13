@@ -6,6 +6,7 @@ import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase;
 import io.fleetiq.proto.device.v1.GetDeviceRequest;
 import io.fleetiq.proto.device.v1.RegisterDeviceRequest;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusRequest;
+import io.fleetiq.proto.device.v1.EnrollDeviceRequest;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
@@ -28,7 +29,9 @@ class DeviceRegistryGrpcAdapterTest {
         Device device = device();
         var adapter = new DeviceRegistryGrpcAdapter(new StubUseCase(
             new DeviceRegistryUseCase.RegisterResult.Registered(device), Optional.of(device),
-            new DeviceRegistryUseCase.UpdateStatusResult.Updated(device)), new GrpcDeviceMapper(), tenant());
+            new DeviceRegistryUseCase.UpdateStatusResult.Updated(device),
+            new DeviceRegistryUseCase.EnrollResult.Enrolled("tenant-a/" + VIN, "secret")),
+            new GrpcDeviceMapper(), tenant());
 
         var response = adapter.registerDevice(RegisterDeviceRequest.newBuilder()
             .setVin(VIN).setDeviceType("OBD").setManufacturer("FleetIQ")
@@ -52,6 +55,9 @@ class DeviceRegistryGrpcAdapterTest {
             @Override public Uni<UpdateStatusResult> updateStatus(UpdateStatusCommand command) {
                 return Uni.createFrom().item(new UpdateStatusResult.NotFound(command.vin()));
             }
+            @Override public Uni<EnrollResult> enroll(EnrollCommand command) {
+                return Uni.createFrom().item(new EnrollResult.NotFound(command.vin()));
+            }
         };
         var adapter = new DeviceRegistryGrpcAdapter(useCase, new GrpcDeviceMapper(), tenant());
 
@@ -65,7 +71,8 @@ class DeviceRegistryGrpcAdapterTest {
     void mapsExpectedOutcomesToGrpcStatuses() {
         var adapter = new DeviceRegistryGrpcAdapter(new StubUseCase(
             new DeviceRegistryUseCase.RegisterResult.AlreadyExists(VIN), Optional.empty(),
-            new DeviceRegistryUseCase.UpdateStatusResult.NotFound(VIN)), new GrpcDeviceMapper(), tenant());
+            new DeviceRegistryUseCase.UpdateStatusResult.NotFound(VIN),
+            new DeviceRegistryUseCase.EnrollResult.NotFound(VIN)), new GrpcDeviceMapper(), tenant());
 
         assertStatus(Status.Code.ALREADY_EXISTS, () -> adapter.registerDevice(
             RegisterDeviceRequest.newBuilder().setVin(VIN).build()).await().indefinitely());
@@ -75,11 +82,27 @@ class DeviceRegistryGrpcAdapterTest {
             UpdateDeviceStatusRequest.newBuilder().setVin(VIN)
                 .setStatus(io.fleetiq.proto.device.v1.DeviceStatus.DEVICE_STATUS_ACTIVE)
                 .build()).await().indefinitely());
+        assertStatus(Status.Code.NOT_FOUND, () -> adapter.enrollDevice(
+            EnrollDeviceRequest.newBuilder().setVin(VIN).build()).await().indefinitely());
+    }
+
+    @Test
+    void returnsCredentialOnlyFromExplicitEnrollment() {
+        var adapter = new DeviceRegistryGrpcAdapter(new StubUseCase(
+            null, Optional.of(device()), null,
+            new DeviceRegistryUseCase.EnrollResult.Enrolled("tenant-a/" + VIN, "one-time-secret")),
+            new GrpcDeviceMapper(), tenant());
+
+        var response = adapter.enrollDevice(EnrollDeviceRequest.newBuilder().setVin(VIN).build())
+            .await().indefinitely();
+
+        assertEquals("tenant-a/" + VIN, response.getUsername());
+        assertEquals("one-time-secret", response.getPassword());
     }
 
     @Test
     void mapsUnspecifiedStatusToInvalidArgument() {
-        var adapter = new DeviceRegistryGrpcAdapter(new StubUseCase(null, Optional.empty(), null),
+        var adapter = new DeviceRegistryGrpcAdapter(new StubUseCase(null, Optional.empty(), null, null),
             new GrpcDeviceMapper(), tenant());
 
         assertStatus(Status.Code.INVALID_ARGUMENT, () -> adapter.updateDeviceStatus(
@@ -106,7 +129,8 @@ class DeviceRegistryGrpcAdapterTest {
     private record StubUseCase(
         RegisterResult registerResult,
         Optional<Device> device,
-        UpdateStatusResult updateResult
+        UpdateStatusResult updateResult,
+        EnrollResult enrollResult
     ) implements DeviceRegistryUseCase {
         @Override public Uni<RegisterResult> register(RegisterCommand command) {
             return Uni.createFrom().item(registerResult);
@@ -116,6 +140,9 @@ class DeviceRegistryGrpcAdapterTest {
         }
         @Override public Uni<UpdateStatusResult> updateStatus(UpdateStatusCommand command) {
             return Uni.createFrom().item(updateResult);
+        }
+        @Override public Uni<EnrollResult> enroll(EnrollCommand command) {
+            return Uni.createFrom().item(enrollResult);
         }
     }
 }

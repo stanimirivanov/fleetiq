@@ -27,6 +27,7 @@ public interface DeviceRegistryUseCase {
     ) {}
 
     record UpdateStatusCommand(String tenantId, String vin, DeviceStatus status) {}
+    record EnrollCommand(String tenantId, String vin) {}
 
     sealed interface RegisterResult {
         record Registered(Device device) implements RegisterResult {}
@@ -38,6 +39,12 @@ public interface DeviceRegistryUseCase {
         record NotFound(String vin) implements UpdateStatusResult {}
     }
 
+    sealed interface EnrollResult {
+        record Enrolled(String username, String secret) implements EnrollResult {}
+        record NotFound(String vin) implements EnrollResult {}
+        record Decommissioned(String vin) implements EnrollResult {}
+    }
+
     /** Registers a device, returning {@code AlreadyExists} when the VIN is already known. */
     Uni<RegisterResult> register(RegisterCommand command);
 
@@ -46,4 +53,7 @@ public interface DeviceRegistryUseCase {
 
     /** Changes status, returning {@code NotFound} when the device does not exist. */
     Uni<UpdateStatusResult> updateStatus(UpdateStatusCommand command);
+
+    /** Issues a new one-time credential for an existing, non-decommissioned device. */
+    Uni<EnrollResult> enroll(EnrollCommand command);
 }
