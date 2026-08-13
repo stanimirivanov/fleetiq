@@ -35,6 +35,7 @@ public class VehicleActor extends AbstractBehavior<VehicleActor.Command> {
     }
 
     public record StateReply(
+        String tenantId,
         String vin,
         Instant lastObservedAt,
         double latitude,
@@ -43,6 +44,7 @@ public class VehicleActor extends AbstractBehavior<VehicleActor.Command> {
         long telemetrySequence
     ) implements CborSerializable {}
 
+    private final String tenantId;
     private final String vin;
     private Instant lastObservedAt;
     private double lastLatitude;
@@ -50,12 +52,13 @@ public class VehicleActor extends AbstractBehavior<VehicleActor.Command> {
     private double lastSpeed;
     private long telemetrySequence;
 
-    public static Behavior<Command> create(String vin) {
-        return Behaviors.setup(ctx -> new VehicleActor(ctx, vin));
+    public static Behavior<Command> create(String tenantId, String vin) {
+        return Behaviors.setup(ctx -> new VehicleActor(ctx, tenantId, vin));
     }
 
-    private VehicleActor(ActorContext<Command> context, String vin) {
+    private VehicleActor(ActorContext<Command> context, String tenantId, String vin) {
         super(context);
+        this.tenantId = tenantId;
         this.vin = vin;
     }
 
@@ -70,8 +73,8 @@ public class VehicleActor extends AbstractBehavior<VehicleActor.Command> {
 
     private Behavior<Command> onTelemetry(RecordTelemetry message) {
         TelemetryUpdate update = message.update();
-        if (!vin.equals(update.vin())) {
-            message.replyTo().tell(OutcomeReply.rejected("VIN does not match entity identity"));
+        if (!tenantId.equals(update.tenantId()) || !vin.equals(update.vin())) {
+            message.replyTo().tell(OutcomeReply.rejected("Tenant or VIN does not match entity identity"));
             return this;
         }
         if (lastObservedAt != null && update.observedAt().isBefore(lastObservedAt)) {
@@ -88,8 +91,8 @@ public class VehicleActor extends AbstractBehavior<VehicleActor.Command> {
     }
 
     private Behavior<Command> onCommand(DispatchCommand message) {
-        if (!vin.equals(message.command().vin())) {
-            message.replyTo().tell(OutcomeReply.rejected("VIN does not match entity identity"));
+        if (!tenantId.equals(message.command().tenantId()) || !vin.equals(message.command().vin())) {
+            message.replyTo().tell(OutcomeReply.rejected("Tenant or VIN does not match entity identity"));
         } else {
             message.replyTo().tell(OutcomeReply.accepted(telemetrySequence));
         }
@@ -98,7 +101,7 @@ public class VehicleActor extends AbstractBehavior<VehicleActor.Command> {
 
     private Behavior<Command> onGetState(GetState message) {
         message.replyTo().tell(new StateReply(
-            vin, lastObservedAt, lastLatitude, lastLongitude, lastSpeed, telemetrySequence));
+            tenantId, vin, lastObservedAt, lastLatitude, lastLongitude, lastSpeed, telemetrySequence));
         return this;
     }
 }

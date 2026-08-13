@@ -59,8 +59,8 @@ No adapter may silently substitute a default tenant. MQTT must first gain an aut
   tenant work explicitly rather than inventing a request tenant.
 - Streaming Hub extracts tenant identity from tenant-qualified MQTT topics and filters
   every authenticated gRPC stream by tenant before VIN selection.
-- Actor state still requires the same
-  explicit tenant migration before multi-tenant production use.
+- Pekko vehicle state uses tenant-and-VIN shard identity and validates tenant ownership
+  again inside the actor. Future persistence IDs must preserve this composite identity.
 
 ## API compatibility
 
