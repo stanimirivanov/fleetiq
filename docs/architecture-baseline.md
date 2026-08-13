@@ -59,7 +59,8 @@ Registry publishes device registration and status changes; Telemetry Ingestion
 publishes normalized position changes. Fleet Topology consumes those contracts
 and never performs synchronous query-time fan-out to the source services.
 
-Projection events are additive protobuf contracts. Consumers must be idempotent
-and reject stale updates using their event timestamps. Durable publication must
-use a transactional outbox before this path is considered production-ready;
-direct MQTT publication is only the current transport foundation.
+Projection events are additive protobuf contracts. Device Registry and Telemetry
+Ingestion persist projection events transactionally with their source changes;
+scheduled relays publish pending records to MQTT and remove them only after an
+acknowledged send. Delivery is therefore at least once. Consumers must be
+idempotent and reject stale updates using their event timestamps.

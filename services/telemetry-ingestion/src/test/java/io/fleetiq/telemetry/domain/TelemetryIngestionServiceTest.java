@@ -22,8 +22,7 @@ class TelemetryIngestionServiceTest {
     @BeforeEach
     void setUp() {
         TelemetryRepository repository = new InMemoryTelemetryRepository();
-        service = new TelemetryIngestionService(repository, sample ->
-            io.smallrye.mutiny.Uni.createFrom().voidItem());
+        service = new TelemetryIngestionService(repository);
     }
 
     @Test

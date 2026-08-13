@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fleetiq.telemetry.domain.model.TelemetrySample;
 import io.fleetiq.telemetry.domain.port.outbound.TelemetryRepository;
+import io.fleetiq.proto.events.v1.PositionProjectionEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
@@ -18,6 +19,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
+import java.util.UUID;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -43,6 +45,11 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
         LIMIT 1000
         """;
 
+    private static final String INSERT_OUTBOX_SQL = """
+        INSERT INTO projection_outbox (id, event_type, payload)
+        VALUES ($1, 'position-projection.v1', $2)
+        """;
+
     private static final String AVERAGE_SPEED_SQL = """
         SELECT AVG(speed_kmh) as avg_speed
         FROM telemetry_samples
@@ -64,8 +71,18 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
             .addDouble(sample.batteryVoltage())
             .addString(toJsonString(sample.customMetrics()));
 
-        return pgPool.preparedQuery(INSERT_SQL)
+        byte[] event = PositionProjectionEvent.newBuilder()
+            .setVin(sample.vin())
+            .setLatitude(sample.latitude())
+            .setLongitude(sample.longitude())
+            .setAltitude(sample.altitude())
+            .setObservedAtEpochMillis(sample.timestamp().toEpochMilli())
+            .build().toByteArray();
+
+        return pgPool.withTransaction(connection -> connection.preparedQuery(INSERT_SQL)
             .execute(tuple)
+            .call(() -> connection.preparedQuery(INSERT_OUTBOX_SQL)
+                .execute(Tuple.of(UUID.randomUUID(), event))))
             .replaceWithVoid();
     }
 
