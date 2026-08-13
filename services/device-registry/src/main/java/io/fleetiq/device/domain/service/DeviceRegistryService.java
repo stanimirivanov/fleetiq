@@ -4,6 +4,7 @@ import io.fleetiq.device.domain.model.Device;
 import io.fleetiq.device.domain.model.DeviceStatus;
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase;
 import io.fleetiq.device.domain.port.outbound.DeviceRepository;
+import io.fleetiq.device.domain.port.outbound.DeviceEventPublisher;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.time.Year;
 public class DeviceRegistryService implements DeviceRegistryUseCase {
 
     private final DeviceRepository repository;
+    private final DeviceEventPublisher eventPublisher;
     private final Clock clock;
 
     @Override
@@ -35,7 +37,9 @@ public class DeviceRegistryService implements DeviceRegistryUseCase {
         return repository.findByVin(command.vin())
             .onItem().transformToUni(existing -> existing.isPresent()
                 ? Uni.createFrom().item(new RegisterResult.AlreadyExists(command.vin()))
-                : repository.save(newDevice).map(RegisterResult.Registered::new));
+                : repository.save(newDevice)
+                    .call(eventPublisher::publish)
+                    .map(RegisterResult.Registered::new));
     }
 
     @Override
@@ -51,6 +55,9 @@ public class DeviceRegistryService implements DeviceRegistryUseCase {
             throw new io.fleetiq.device.domain.model.DeviceValidationException("Status is required");
         }
         return repository.updateStatus(command.vin(), command.status())
+            .call(device -> device.isPresent()
+                ? eventPublisher.publish(device.orElseThrow())
+                : Uni.createFrom().voidItem())
             .map(device -> device
                 .<UpdateStatusResult>map(UpdateStatusResult.Updated::new)
                 .orElseGet(() -> new UpdateStatusResult.NotFound(command.vin())));

@@ -5,6 +5,7 @@ import io.fleetiq.device.domain.model.DeviceStatus;
 import io.fleetiq.device.domain.model.DeviceValidationException;
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase;
 import io.fleetiq.device.domain.port.outbound.DeviceRepository;
+import io.fleetiq.device.domain.port.outbound.DeviceEventPublisher;
 import io.fleetiq.device.domain.service.DeviceRegistryService;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ class DeviceRegistryServiceTest {
     private final StubRepository repository = new StubRepository();
     private final DeviceRegistryService service = new DeviceRegistryService(
         repository,
+        device -> Uni.createFrom().voidItem(),
         Clock.fixed(Instant.parse("2026-08-12T12:00:00Z"), ZoneOffset.UTC)
     );
 
