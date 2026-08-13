@@ -15,15 +15,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class StreamingServiceTest {
 
-    private final PositionEvent first = event("1HGCM82633A004352");
-    private final PositionEvent second = event("JH4KA4650MC000000");
-    private final PositionEventSource source = () -> Multi.createFrom().items(first, second);
+    private final PositionEvent first = event("tenant-a", "1HGCM82633A004352");
+    private final PositionEvent second = event("tenant-a", "JH4KA4650MC000000");
+    private final PositionEvent otherTenant = event("tenant-b", first.vin());
+    private final PositionEventSource source = () -> Multi.createFrom().items(first, second, otherTenant);
     private final StreamingService service = new StreamingService(source);
 
     @Test
     void filtersFleetByRequestedVins() {
         List<PositionEvent> events = service.watchFleet(
-                Set.of(second.vin()), Duration.ZERO)
+                "tenant-a", Set.of(second.vin()), Duration.ZERO)
             .collect().asList().await().indefinitely();
 
         assertEquals(List.of(second), events);
@@ -32,14 +33,23 @@ class StreamingServiceTest {
     @Test
     void filtersSingleVehicleFromSharedSource() {
         List<PositionEvent> events = service.watchVehicle(
-                first.vin(), Duration.ZERO)
+                "tenant-a", first.vin(), Duration.ZERO)
             .collect().asList().await().indefinitely();
 
         assertEquals(List.of(first), events);
     }
 
-    private static PositionEvent event(String vin) {
+    @Test
+    void neverEmitsAnotherTenantsIdenticalVin() {
+        List<PositionEvent> events = service.watchVehicle(
+                "tenant-a", first.vin(), Duration.ZERO)
+            .collect().asList().await().indefinitely();
+
+        assertEquals(List.of(first), events);
+    }
+
+    private static PositionEvent event(String tenantId, String vin) {
         return new PositionEvent(
-            vin, Instant.parse("2026-08-12T12:00:00Z"), 52.52, 13.405, 34, 72.5, "MOVING");
+            tenantId, vin, Instant.parse("2026-08-12T12:00:00Z"), 52.52, 13.405, 34, 72.5, "MOVING");
     }
 }

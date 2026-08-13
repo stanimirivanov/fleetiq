@@ -15,8 +15,10 @@ class MqttPositionEventSourceTest {
 
     @Test
     void mapsSimulatorTelemetryToPositionEvent() {
-        var event = source.toDomain(json("52.52", "13.405"));
+        var event = source.toDomain("fleetiq/tenant-a/1HGCM82633A004352/telemetry",
+            json("52.52", "13.405"));
 
+        assertEquals("tenant-a", event.tenantId());
         assertEquals("1HGCM82633A004352", event.vin());
         assertEquals(Instant.parse("2026-08-12T12:00:00Z"), event.observedAt());
         assertEquals(72.5, event.speedKmh());
@@ -24,7 +26,8 @@ class MqttPositionEventSourceTest {
 
     @Test
     void rejectsInvalidCoordinates() {
-        assertThrows(IllegalArgumentException.class, () -> source.toDomain(json("91", "13.405")));
+        assertThrows(IllegalArgumentException.class, () -> source.toDomain(
+            "fleetiq/tenant-a/1HGCM82633A004352/telemetry", json("91", "13.405")));
     }
 
     private static byte[] json(String latitude, String longitude) {

@@ -7,6 +7,6 @@ import java.time.Duration;
 import java.util.Set;
 
 public interface StreamingUseCase {
-    Multi<PositionEvent> watchFleet(Set<String> vins, Duration minimumInterval);
-    Multi<PositionEvent> watchVehicle(String vin, Duration minimumInterval);
+    Multi<PositionEvent> watchFleet(String tenantId, Set<String> vins, Duration minimumInterval);
+    Multi<PositionEvent> watchVehicle(String tenantId, String vin, Duration minimumInterval);
 }

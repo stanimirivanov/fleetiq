@@ -3,6 +3,7 @@ package io.fleetiq.streaming.domain.model;
 import java.time.Instant;
 
 public record PositionEvent(
+    String tenantId,
     String vin,
     Instant observedAt,
     double latitude,
