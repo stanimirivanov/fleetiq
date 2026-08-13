@@ -19,17 +19,17 @@ public class TopologyService implements TopologyUseCase {
     }
 
     @Override
-    public Uni<Void> createRelationship(TopologyEdge edge) {
-        return repository.createRelationship(edge);
+    public Uni<Void> createRelationship(String tenantId, TopologyEdge edge) {
+        return repository.createRelationship(tenantId, edge);
     }
 
     @Override
-    public Uni<List<TopologyNode>> getFleetGraph(String rootVin, int maxDepth) {
-        return repository.findConnectedNodes(rootVin, maxDepth);
+    public Uni<List<TopologyNode>> getFleetGraph(String tenantId, String rootVin, int maxDepth) {
+        return repository.findConnectedNodes(tenantId, rootVin, maxDepth);
     }
 
     @Override
-    public Uni<List<String>> findNearbyVehicles(double latitude, double longitude, double radiusKm) {
-        return repository.findNearby(latitude, longitude, radiusKm);
+    public Uni<List<String>> findNearbyVehicles(String tenantId, double latitude, double longitude, double radiusKm) {
+        return repository.findNearby(tenantId, latitude, longitude, radiusKm);
     }
 }

@@ -6,7 +6,7 @@ import io.smallrye.mutiny.Uni;
 import java.util.List;
 
 public interface TopologyUseCase {
-    Uni<Void> createRelationship(TopologyEdge edge);
-    Uni<List<TopologyNode>> getFleetGraph(String rootVin, int maxDepth);
-    Uni<List<String>> findNearbyVehicles(double latitude, double longitude, double radiusKm);
+    Uni<Void> createRelationship(String tenantId, TopologyEdge edge);
+    Uni<List<TopologyNode>> getFleetGraph(String tenantId, String rootVin, int maxDepth);
+    Uni<List<String>> findNearbyVehicles(String tenantId, double latitude, double longitude, double radiusKm);
 }

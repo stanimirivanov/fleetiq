@@ -22,8 +22,9 @@ public class TopologyProjectionConsumer {
     public Uni<Void> consumeDevice(byte[] payload) {
         try {
             DeviceProjectionEvent event = DeviceProjectionEvent.parseFrom(payload);
+            requireTenant(event.getTenantId());
             requireVin(event.getVin());
-            return useCase.projectDevice(new VehicleProjection(
+            return useCase.projectDevice(event.getTenantId(), new VehicleProjection(
                 event.getVin(), event.getDeviceType(), event.getStatus(), null, null, null,
                 Instant.ofEpochMilli(event.getOccurredAtEpochMillis()), null));
         } catch (InvalidProtocolBufferException e) {
@@ -35,9 +36,10 @@ public class TopologyProjectionConsumer {
     public Uni<Void> consumePosition(byte[] payload) {
         try {
             PositionProjectionEvent event = PositionProjectionEvent.parseFrom(payload);
+            requireTenant(event.getTenantId());
             requireVin(event.getVin());
             validateCoordinates(event.getLatitude(), event.getLongitude());
-            return useCase.projectPosition(event.getVin(), event.getLatitude(), event.getLongitude(),
+            return useCase.projectPosition(event.getTenantId(), event.getVin(), event.getLatitude(), event.getLongitude(),
                 event.getAltitude(), Instant.ofEpochMilli(event.getObservedAtEpochMillis()));
         } catch (InvalidProtocolBufferException e) {
             return Uni.createFrom().failure(new IllegalArgumentException("Invalid position projection event", e));
@@ -46,6 +48,10 @@ public class TopologyProjectionConsumer {
 
     private static void requireVin(String vin) {
         if (vin == null || vin.isBlank()) throw new IllegalArgumentException("VIN is required");
+    }
+
+    private static void requireTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) throw new IllegalArgumentException("Tenant ID is required");
     }
 
     private static void validateCoordinates(double latitude, double longitude) {

@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @QuarkusTest
 class AgeTopologyRepositoryIT {
 
+    private static final String TENANT = "tenant-a";
     private static final String VIN = "1HGCM82633A004352";
     private static final Instant NEWER = Instant.parse("2026-08-13T10:00:00Z");
     private static final Instant OLDER = Instant.parse("2026-08-13T09:00:00Z");
@@ -28,9 +29,9 @@ class AgeTopologyRepositoryIT {
     @RunOnVertxContext
     void deviceProjectionIsIdempotentAndRejectsStaleUpdates(UniAsserter asserter) {
         asserter.execute(this::reset);
-        asserter.execute(() -> repository.upsertVehicle(vehicle("ACTIVE", NEWER)));
-        asserter.execute(() -> repository.upsertVehicle(vehicle("IDLE", OLDER)));
-        asserter.execute(() -> repository.upsertVehicle(vehicle("ACTIVE", NEWER)));
+        asserter.execute(() -> repository.upsertVehicle(TENANT, vehicle("ACTIVE", NEWER)));
+        asserter.execute(() -> repository.upsertVehicle(TENANT, vehicle("IDLE", OLDER)));
+        asserter.execute(() -> repository.upsertVehicle(TENANT, vehicle("ACTIVE", NEWER)));
         asserter.assertThat(() -> pgPool.preparedQuery("""
             SELECT count(*) AS count, max(status) AS status
             FROM topology_vehicle_projection WHERE vin = $1
@@ -45,8 +46,8 @@ class AgeTopologyRepositoryIT {
     @RunOnVertxContext
     void positionProjectionIsIdempotentAndRejectsStaleUpdates(UniAsserter asserter) {
         asserter.execute(this::reset);
-        asserter.execute(() -> repository.updatePosition(VIN, 52.52, 13.405, 34, NEWER));
-        asserter.execute(() -> repository.updatePosition(VIN, 1, 2, 3, OLDER));
+        asserter.execute(() -> repository.updatePosition(TENANT, VIN, 52.52, 13.405, 34, NEWER));
+        asserter.execute(() -> repository.updatePosition(TENANT, VIN, 1, 2, 3, OLDER));
         asserter.assertThat(() -> pgPool.preparedQuery("""
             SELECT latitude, longitude FROM topology_vehicle_projection WHERE vin = $1
             """).execute(io.vertx.mutiny.sqlclient.Tuple.of(VIN)), rows -> {
@@ -62,19 +63,19 @@ class AgeTopologyRepositoryIT {
         String second = "JH4TB2H26CC000001";
         String third = "2HGFC2F59JH000001";
         asserter.execute(this::reset);
-        asserter.execute(() -> repository.upsertVehicle(vehicle(VIN, "ACTIVE", NEWER)));
-        asserter.execute(() -> repository.upsertVehicle(vehicle(second, "IDLE", NEWER)));
-        asserter.execute(() -> repository.upsertVehicle(vehicle(third, "MAINTENANCE", NEWER)));
-        asserter.execute(() -> repository.createRelationship(
+        asserter.execute(() -> repository.upsertVehicle(TENANT, vehicle(VIN, "ACTIVE", NEWER)));
+        asserter.execute(() -> repository.upsertVehicle(TENANT, vehicle(second, "IDLE", NEWER)));
+        asserter.execute(() -> repository.upsertVehicle(TENANT, vehicle(third, "MAINTENANCE", NEWER)));
+        asserter.execute(() -> repository.createRelationship(TENANT,
             new TopologyEdge(VIN, second, "CONVOY", Map.of("lane", "west"))));
-        asserter.execute(() -> repository.createRelationship(
+        asserter.execute(() -> repository.createRelationship(TENANT,
             new TopologyEdge(VIN, second, "CONVOY", Map.of("lane", "east"))));
-        asserter.execute(() -> repository.createRelationship(
+        asserter.execute(() -> repository.createRelationship(TENANT,
             new TopologyEdge(second, third, "TRAILER", Map.of())));
 
-        asserter.assertThat(() -> repository.findConnectedNodes(VIN, 1), nodes ->
+        asserter.assertThat(() -> repository.findConnectedNodes(TENANT, VIN, 1), nodes ->
             assertEquals(java.util.List.of(VIN, second), nodes.stream().map(node -> node.vin()).toList()));
-        asserter.assertThat(() -> repository.findConnectedNodes(VIN, 2), nodes ->
+        asserter.assertThat(() -> repository.findConnectedNodes(TENANT, VIN, 2), nodes ->
             assertEquals(java.util.List.of(VIN, second, third), nodes.stream().map(node -> node.vin()).toList()));
         asserter.assertThat(() -> pgPool.query("SELECT count(*) AS count FROM topology_relationship_projection")
             .execute(), rows -> assertEquals(2L, rows.iterator().next().getLong("count")));
@@ -86,11 +87,23 @@ class AgeTopologyRepositoryIT {
         String nearby = "JH4TB2H26CC000001";
         String distant = "2HGFC2F59JH000001";
         asserter.execute(this::reset);
-        asserter.execute(() -> repository.updatePosition(VIN, 52.5200, 13.4050, 34, NEWER));
-        asserter.execute(() -> repository.updatePosition(nearby, 52.5210, 13.4050, 34, NEWER));
-        asserter.execute(() -> repository.updatePosition(distant, 53.0, 13.4050, 34, NEWER));
-        asserter.assertThat(() -> repository.findNearby(52.5200, 13.4050, 1), vins ->
+        asserter.execute(() -> repository.updatePosition(TENANT, VIN, 52.5200, 13.4050, 34, NEWER));
+        asserter.execute(() -> repository.updatePosition(TENANT, nearby, 52.5210, 13.4050, 34, NEWER));
+        asserter.execute(() -> repository.updatePosition(TENANT, distant, 53.0, 13.4050, 34, NEWER));
+        asserter.assertThat(() -> repository.findNearby(TENANT, 52.5200, 13.4050, 1), vins ->
             assertEquals(java.util.List.of(VIN, nearby), vins));
+    }
+
+    @Test
+    @RunOnVertxContext
+    void isolatesProjectionQueriesAcrossTenants(UniAsserter asserter) {
+        asserter.execute(this::reset);
+        asserter.execute(() -> repository.updatePosition("tenant-a", VIN, 52.5200, 13.4050, 34, NEWER));
+        asserter.execute(() -> repository.updatePosition("tenant-b", VIN, 40.7128, -74.0060, 10, NEWER));
+        asserter.assertThat(() -> repository.findNearby("tenant-a", 52.5200, 13.4050, 1), vins ->
+            assertEquals(java.util.List.of(VIN), vins));
+        asserter.assertThat(() -> repository.findNearby("tenant-b", 52.5200, 13.4050, 1), vins ->
+            assertEquals(java.util.List.of(), vins));
     }
 
     private io.smallrye.mutiny.Uni<?> reset() {

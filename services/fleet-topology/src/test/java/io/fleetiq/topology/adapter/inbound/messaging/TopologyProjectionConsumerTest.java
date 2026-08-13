@@ -21,6 +21,7 @@ class TopologyProjectionConsumerTest {
     void projectsDeviceEvent() {
         consumer.consumeDevice(DeviceProjectionEvent.newBuilder()
             .setVin("1HGCM82633A004352").setDeviceType("OBD").setStatus("ACTIVE")
+            .setTenantId("tenant-a")
             .setOccurredAtEpochMillis(1_765_000_000_000L).build().toByteArray())
             .await().indefinitely();
 
@@ -33,6 +34,7 @@ class TopologyProjectionConsumerTest {
     void projectsPositionEvent() {
         consumer.consumePosition(PositionProjectionEvent.newBuilder()
             .setVin("1HGCM82633A004352").setLatitude(52.52).setLongitude(13.405)
+            .setTenantId("tenant-a")
             .setAltitude(34).setObservedAtEpochMillis(1_765_000_000_000L)
             .build().toByteArray()).await().indefinitely();
 
@@ -46,7 +48,7 @@ class TopologyProjectionConsumerTest {
         assertThrows(IllegalArgumentException.class,
             () -> consumer.consumeDevice(new byte[]{1, 2, 3}).await().indefinitely());
         byte[] invalidPosition = PositionProjectionEvent.newBuilder()
-            .setVin("1HGCM82633A004352").setLatitude(91).build().toByteArray();
+            .setTenantId("tenant-a").setVin("1HGCM82633A004352").setLatitude(91).build().toByteArray();
         assertThrows(IllegalArgumentException.class,
             () -> consumer.consumePosition(invalidPosition).await().indefinitely());
     }
@@ -58,13 +60,13 @@ class TopologyProjectionConsumerTest {
         private double longitude;
 
         @Override
-        public Uni<Void> projectDevice(VehicleProjection vehicle) {
+        public Uni<Void> projectDevice(String tenantId, VehicleProjection vehicle) {
             this.vehicle = vehicle;
             return Uni.createFrom().voidItem();
         }
 
         @Override
-        public Uni<Void> projectPosition(String vin, double latitude, double longitude, double altitude,
+        public Uni<Void> projectPosition(String tenantId, String vin, double latitude, double longitude, double altitude,
                                          Instant observedAt) {
             this.positionVin = vin;
             this.latitude = latitude;

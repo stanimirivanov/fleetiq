@@ -9,6 +9,7 @@ import io.fleetiq.proto.topology.v1.GetFleetGraphResponse;
 import io.fleetiq.proto.topology.v1.MutinyFleetTopologyGrpc;
 import io.fleetiq.topology.domain.port.inbound.TopologyUseCase;
 import io.fleetiq.security.TenantSecured;
+import io.fleetiq.security.CurrentTenant;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import lombok.RequiredArgsConstructor;
@@ -22,23 +23,25 @@ public class TopologyGrpcAdapter extends MutinyFleetTopologyGrpc.FleetTopologyIm
 
     private final TopologyUseCase useCase;
     private final GrpcTopologyMapper mapper;
+    private final CurrentTenant currentTenant;
 
     @Override
     public Uni<CreateRelationshipResponse> createRelationship(CreateRelationshipRequest request) {
         return Uni.createFrom().item(() -> mapper.toDomain(request))
-            .onItem().transformToUni(useCase::createRelationship)
+            .onItem().transformToUni(edge -> useCase.createRelationship(currentTenant.get().tenantId(), edge))
             .replaceWith(CreateRelationshipResponse.newBuilder().setCreated(true).build());
     }
 
     @Override
     public Uni<GetFleetGraphResponse> getFleetGraph(GetFleetGraphRequest request) {
-        return useCase.getFleetGraph(request.getRootVin(), request.getMaxDepth())
+        return useCase.getFleetGraph(currentTenant.get().tenantId(), request.getRootVin(), request.getMaxDepth())
             .map(mapper::toGraphResponse);
     }
 
     @Override
     public Uni<FindNearbyResponse> findNearbyVehicles(FindNearbyRequest request) {
         return useCase.findNearbyVehicles(
+                currentTenant.get().tenantId(),
                 request.getCenter().getLatitude(),
                 request.getCenter().getLongitude(),
                 request.getRadiusKm())
