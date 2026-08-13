@@ -11,7 +11,7 @@ import java.util.List;
  * maintenance, and reading prediction history.
  */
 public interface PredictMaintenanceUseCase {
-    Uni<PredictionResult> predict(String vin, int lookbackDays);
-    Uni<MaintenanceRecord> recordEvent(MaintenanceRecord record);
-    Uni<List<PredictionResult>> getHistory(String vin, int limit);
+    Uni<PredictionResult> predict(String tenantId, String vin, int lookbackDays);
+    Uni<MaintenanceRecord> recordEvent(String tenantId, MaintenanceRecord record);
+    Uni<List<PredictionResult>> getHistory(String tenantId, String vin, int limit);
 }

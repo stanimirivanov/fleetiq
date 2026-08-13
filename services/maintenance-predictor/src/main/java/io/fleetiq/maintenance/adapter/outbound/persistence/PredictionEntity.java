@@ -16,9 +16,11 @@ import java.util.UUID;
 public class PredictionEntity extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "prediction_id")
     public UUID predictionId;
+
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    public String tenantId;
 
     @Column(name = "vin", nullable = false, length = 17)
     public String vin;

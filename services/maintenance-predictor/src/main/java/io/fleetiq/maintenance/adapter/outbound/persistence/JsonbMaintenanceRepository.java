@@ -20,51 +20,41 @@ public class JsonbMaintenanceRepository implements MaintenanceRepository {
     private final MaintenanceMapper mapper;
 
     @Override
-    public Uni<MaintenanceRecord> saveEvent(MaintenanceRecord record) {
+    public Uni<MaintenanceRecord> saveEvent(String tenantId, MaintenanceRecord record) {
         MaintenanceEventEntity entity = mapper.toEntity(record);
+        entity.tenantId = tenantId;
 
         return Panache.withTransaction(entity::persist)
             .map(persisted ->
                 mapper.toDomain((MaintenanceEventEntity) persisted)
-            )
-            .onFailure().invoke(e ->
-                log.error("Failed to save maintenance event for VIN: {}", record.vin(), e)
             );
     }
 
     @Override
-    public Uni<PredictionResult> savePrediction(PredictionResult prediction) {
+    public Uni<PredictionResult> savePrediction(String tenantId, PredictionResult prediction) {
         PredictionEntity entity = mapper.toEntity(prediction);
+        entity.tenantId = tenantId;
 
         return Panache.withTransaction(entity::persist)
             .map(persisted ->
                 mapper.toDomain((PredictionEntity) persisted)
-            )
-            .onFailure().invoke(e ->
-                log.error("Failed to save prediction for VIN: {}", prediction.vin(), e)
             );
     }
 
     @Override
-    public Uni<List<MaintenanceRecord>> findEventsByVin(String vin) {
-        return MaintenanceEventEntity.<MaintenanceEventEntity>find("vin", Sort.by("occurredAt").descending(), vin)
-            .list()
-            .map(entities ->
-                entities.stream()
-                .map(mapper::toDomain)
-                .toList()
-            );
+    public Uni<List<MaintenanceRecord>> findEventsByVin(String tenantId, String vin) {
+        return Panache.withSession(() -> MaintenanceEventEntity.<MaintenanceEventEntity>find(
+                    "tenantId = ?1 and vin = ?2", Sort.by("occurredAt").descending(), tenantId, vin)
+                .list()
+                .map(entities -> entities.stream().map(mapper::toDomain).toList()));
     }
 
     @Override
-    public Uni<List<PredictionResult>> findPredictionsByVin(String vin, int limit) {
-        return PredictionEntity.<PredictionEntity>find("vin", Sort.by("generatedAt").descending(), vin)
-            .page(0, limit)
-            .list()
-            .map(entities ->
-                entities.stream()
-                .map(mapper::toDomain)
-                .toList()
-            );
+    public Uni<List<PredictionResult>> findPredictionsByVin(String tenantId, String vin, int limit) {
+        return Panache.withSession(() -> PredictionEntity.<PredictionEntity>find(
+                    "tenantId = ?1 and vin = ?2", Sort.by("generatedAt").descending(), tenantId, vin)
+                .page(0, limit)
+                .list()
+                .map(entities -> entities.stream().map(mapper::toDomain).toList()));
     }
 }

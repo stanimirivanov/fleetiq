@@ -3,6 +3,7 @@ package io.fleetiq.maintenance.adapter.inbound.grpc;
 import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase;
 import io.fleetiq.proto.maintenance.v1.*;
 import io.fleetiq.security.TenantSecured;
+import io.fleetiq.security.CurrentTenant;
 import io.smallrye.mutiny.Uni;
 import io.quarkus.grpc.GrpcService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,13 @@ public class MaintenanceGrpcAdapter extends MutinyMaintenancePredictorGrpc.Maint
 
     private final PredictMaintenanceUseCase useCase;
     private final GrpcMaintenanceMapper mapper;
+    private final CurrentTenant currentTenant;
 
     @Override
     public Uni<PredictMaintenanceResponse> predictMaintenance(PredictMaintenanceRequest request) {
         log.info("gRPC predict maintenance: {}", request.getVin());
 
-        return useCase.predict(request.getVin(), request.getLookbackDays())
+        return useCase.predict(currentTenant.get().tenantId(), request.getVin(), request.getLookbackDays())
             .map(mapper::toProto);
     }
 
@@ -31,7 +33,7 @@ public class MaintenanceGrpcAdapter extends MutinyMaintenancePredictorGrpc.Maint
     public Uni<GetPredictionHistoryResponse> getPredictionHistory(GetPredictionHistoryRequest request) {
         log.debug("gRPC get prediction history: {}", request.getVin());
 
-        return useCase.getHistory(request.getVin(), request.getLimit())
+        return useCase.getHistory(currentTenant.get().tenantId(), request.getVin(), request.getLimit())
             .map(list -> GetPredictionHistoryResponse.newBuilder()
                 .addAllPredictions(list.stream().map(mapper::toProto).toList())
                 .build());
@@ -43,7 +45,7 @@ public class MaintenanceGrpcAdapter extends MutinyMaintenancePredictorGrpc.Maint
 
         var domainRecord = mapper.toDomain(request);
 
-        return useCase.recordEvent(domainRecord)
+        return useCase.recordEvent(currentTenant.get().tenantId(), domainRecord)
             .map(mapper::toRecordEventResponse);
     }
 }

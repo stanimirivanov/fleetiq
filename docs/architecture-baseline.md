@@ -54,7 +54,10 @@ No adapter may silently substitute a default tenant. MQTT must first gain an aut
   still bind authenticated publishers to their tenant-qualified topic prefix.
 - Fleet Topology scopes consumed projections, relational and AGE graph identity,
   relationships, traversal, proximity queries, and authenticated gRPC calls by tenant.
-- Maintenance, streaming, and actor state still require the same
+- Maintenance Predictor scopes evidence, predictions, embeddings, repository queries,
+  and authenticated gRPC operations by tenant. Future scheduled work must enumerate
+  tenant work explicitly rather than inventing a request tenant.
+- Streaming and actor state still require the same
   explicit tenant migration before multi-tenant production use.
 
 ## API compatibility

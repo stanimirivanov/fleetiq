@@ -15,9 +15,11 @@ import java.util.UUID;
 public class MaintenanceEventEntity extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "event_id")
     public UUID eventId;
+
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    public String tenantId;
 
     @Column(name = "vin", nullable = false, length = 17)
     public String vin;
