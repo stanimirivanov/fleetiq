@@ -19,6 +19,14 @@ public class MqttTestResource implements QuarkusTestResourceLifecycleManager {
             MountableFile.forClasspathResource("mosquitto-test.conf"),
             "/mosquitto/config/mosquitto.conf"
         )
+        .withCopyFileToContainer(
+            MountableFile.forClasspathResource("mosquitto-test-passwords", 0600),
+            "/mosquitto/runtime/passwords"
+        )
+        .withCopyFileToContainer(
+            MountableFile.forClasspathResource("mosquitto-test.acl", 0600),
+            "/mosquitto/runtime/acl"
+        )
         .withExposedPorts(1883);
 
     @Override
@@ -28,14 +36,18 @@ public class MqttTestResource implements QuarkusTestResourceLifecycleManager {
         String host = MOSQUITTO.getHost();
         Integer port = MOSQUITTO.getMappedPort(1883);
 
-        return Map.of(
-            "mp.messaging.incoming.telemetry-in.enabled", "true",
-            "mp.messaging.incoming.telemetry-in.host", host,
-            "mp.messaging.incoming.telemetry-in.port", port.toString(),
-            "mp.messaging.incoming.telemetry-in.client-id", "telemetry-ingestion-test",
-            "mp.messaging.outgoing.position-projections-out.enabled", "true",
-            "mp.messaging.outgoing.position-projections-out.host", host,
-            "mp.messaging.outgoing.position-projections-out.port", port.toString()
+        return Map.ofEntries(
+            Map.entry("mp.messaging.incoming.telemetry-in.enabled", "true"),
+            Map.entry("mp.messaging.incoming.telemetry-in.host", host),
+            Map.entry("mp.messaging.incoming.telemetry-in.port", port.toString()),
+            Map.entry("mp.messaging.incoming.telemetry-in.client-id", "telemetry-ingestion-test"),
+            Map.entry("mp.messaging.incoming.telemetry-in.username", "telemetry-ingestion"),
+            Map.entry("mp.messaging.incoming.telemetry-in.password", "telemetry-ingestion-test"),
+            Map.entry("mp.messaging.outgoing.position-projections-out.enabled", "true"),
+            Map.entry("mp.messaging.outgoing.position-projections-out.host", host),
+            Map.entry("mp.messaging.outgoing.position-projections-out.port", port.toString()),
+            Map.entry("mp.messaging.outgoing.position-projections-out.username", "telemetry-ingestion"),
+            Map.entry("mp.messaging.outgoing.position-projections-out.password", "telemetry-ingestion-test")
         );
     }
 
