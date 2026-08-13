@@ -62,7 +62,9 @@ and never performs synchronous query-time fan-out to the source services.
 Projection events are additive protobuf contracts. Device Registry and Telemetry
 Ingestion persist projection events transactionally with their source changes;
 scheduled relays publish pending records to MQTT and remove them only after an
-acknowledged send. Delivery is therefore at least once. Consumers must be
+acknowledged send. Relays claim batches transactionally with `FOR UPDATE SKIP
+LOCKED`, allowing multiple replicas to work without selecting the same record;
+publication failure rolls the transaction back. Delivery is therefore at least once. Consumers must be
 idempotent and reject stale updates using their event timestamps. Fleet
 Topology applies this rule through timestamp-guarded relational projection
 upserts; only accepted updates are synchronized to the corresponding Apache AGE
