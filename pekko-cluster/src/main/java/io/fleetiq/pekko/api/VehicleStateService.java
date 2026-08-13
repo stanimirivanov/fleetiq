@@ -13,9 +13,10 @@ public interface VehicleStateService {
 
     CompletionStage<CommandOutcome> dispatchCommand(VehicleCommand command);
 
-    CompletionStage<VehicleState> getState(String vin);
+    CompletionStage<VehicleState> getState(String tenantId, String vin);
 
     record TelemetryUpdate(
+        String tenantId,
         String vin,
         Instant observedAt,
         double latitude,
@@ -23,6 +24,7 @@ public interface VehicleStateService {
         double speedKmh
     ) {
         public TelemetryUpdate {
+            validateTenant(tenantId);
             VehicleStateValidation.validateVin(vin);
             if (observedAt == null) throw new IllegalArgumentException("observedAt is required");
             if (latitude < -90 || latitude > 90) throw new IllegalArgumentException("Invalid latitude");
@@ -31,8 +33,9 @@ public interface VehicleStateService {
         }
     }
 
-    record VehicleCommand(String vin, String name, String payload) {
+    record VehicleCommand(String tenantId, String vin, String name, String payload) {
         public VehicleCommand {
+            validateTenant(tenantId);
             VehicleStateValidation.validateVin(vin);
             if (name == null || name.isBlank()) throw new IllegalArgumentException("Command name is required");
             payload = payload == null ? "" : payload;
@@ -40,6 +43,7 @@ public interface VehicleStateService {
     }
 
     record VehicleState(
+        String tenantId,
         String vin,
         Instant lastObservedAt,
         double latitude,
@@ -51,5 +55,11 @@ public interface VehicleStateService {
     sealed interface CommandOutcome {
         record Accepted(long sequence) implements CommandOutcome {}
         record Rejected(String reason) implements CommandOutcome {}
+    }
+
+    private static void validateTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalArgumentException("tenantId is required");
+        }
     }
 }

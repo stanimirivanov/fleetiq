@@ -23,7 +23,7 @@ public final class PekkoVehicleStateService implements VehicleStateService {
 
     @Override
     public CompletionStage<CommandOutcome> recordTelemetry(TelemetryUpdate update) {
-        var entity = VehicleSharding.getVehicleRef(actorSystem, update.vin());
+        var entity = VehicleSharding.getVehicleRef(actorSystem, update.tenantId(), update.vin());
         return AskPattern.<VehicleActor.Command, VehicleActor.OutcomeReply>ask(
                 entity, replyTo -> new VehicleActor.RecordTelemetry(update, replyTo),
                 askTimeout, actorSystem.scheduler())
@@ -32,7 +32,7 @@ public final class PekkoVehicleStateService implements VehicleStateService {
 
     @Override
     public CompletionStage<CommandOutcome> dispatchCommand(VehicleCommand command) {
-        var entity = VehicleSharding.getVehicleRef(actorSystem, command.vin());
+        var entity = VehicleSharding.getVehicleRef(actorSystem, command.tenantId(), command.vin());
         return AskPattern.<VehicleActor.Command, VehicleActor.OutcomeReply>ask(
                 entity, replyTo -> new VehicleActor.DispatchCommand(command, replyTo),
                 askTimeout, actorSystem.scheduler())
@@ -40,13 +40,14 @@ public final class PekkoVehicleStateService implements VehicleStateService {
     }
 
     @Override
-    public CompletionStage<VehicleState> getState(String vin) {
+    public CompletionStage<VehicleState> getState(String tenantId, String vin) {
+        if (tenantId == null || tenantId.isBlank()) throw new IllegalArgumentException("tenantId is required");
         VehicleStateValidation.validateVin(vin);
-        var entity = VehicleSharding.getVehicleRef(actorSystem, vin);
+        var entity = VehicleSharding.getVehicleRef(actorSystem, tenantId, vin);
         return AskPattern.<VehicleActor.Command, VehicleActor.StateReply>ask(
                 entity, VehicleActor.GetState::new, askTimeout, actorSystem.scheduler())
             .thenApply(state -> new VehicleState(
-                state.vin(), state.lastObservedAt(), state.latitude(), state.longitude(),
+                state.tenantId(), state.vin(), state.lastObservedAt(), state.latitude(), state.longitude(),
                 state.speedKmh(), state.telemetrySequence()));
     }
 

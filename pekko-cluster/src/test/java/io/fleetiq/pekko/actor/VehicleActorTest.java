@@ -16,6 +16,7 @@ class VehicleActorTest {
 
     private static final ActorTestKit TEST_KIT = ActorTestKit.create();
     private static final String VIN = "1HGCM82633A004352";
+    private static final String TENANT = "tenant-a";
 
     @AfterAll
     static void shutdown() {
@@ -24,18 +25,19 @@ class VehicleActorTest {
 
     @Test
     void acknowledgesTelemetryAndReturnsState() {
-        var actor = TEST_KIT.spawn(VehicleActor.create(VIN));
+        var actor = TEST_KIT.spawn(VehicleActor.create(TENANT, VIN));
         TestProbe<VehicleActor.OutcomeReply> outcome = TEST_KIT.createTestProbe();
         TestProbe<VehicleActor.StateReply> state = TEST_KIT.createTestProbe();
         Instant observedAt = Instant.parse("2026-08-12T12:00:00Z");
 
         actor.tell(new VehicleActor.RecordTelemetry(
-            new TelemetryUpdate(VIN, observedAt, 52.52, 13.405, 72.5), outcome.ref()));
+            new TelemetryUpdate(TENANT, VIN, observedAt, 52.52, 13.405, 72.5), outcome.ref()));
         actor.tell(new VehicleActor.GetState(state.ref()));
 
         assertEquals(1, outcome.receiveMessage().sequence());
         var snapshot = state.receiveMessage();
         assertEquals(VIN, snapshot.vin());
+        assertEquals(TENANT, snapshot.tenantId());
         assertEquals(observedAt, snapshot.lastObservedAt());
         assertEquals(72.5, snapshot.speedKmh());
         assertEquals(1, snapshot.telemetrySequence());
@@ -43,17 +45,30 @@ class VehicleActorTest {
 
     @Test
     void rejectsTelemetryOlderThanCurrentState() {
-        var actor = TEST_KIT.spawn(VehicleActor.create(VIN));
+        var actor = TEST_KIT.spawn(VehicleActor.create(TENANT, VIN));
         TestProbe<VehicleActor.OutcomeReply> outcome = TEST_KIT.createTestProbe();
 
         actor.tell(new VehicleActor.RecordTelemetry(
-            new TelemetryUpdate(VIN, Instant.parse("2026-08-12T12:00:00Z"), 1, 1, 1), outcome.ref()));
+            new TelemetryUpdate(TENANT, VIN, Instant.parse("2026-08-12T12:00:00Z"), 1, 1, 1), outcome.ref()));
         assertTrue(outcome.receiveMessage().accepted());
         actor.tell(new VehicleActor.RecordTelemetry(
-            new TelemetryUpdate(VIN, Instant.parse("2026-08-12T11:59:59Z"), 2, 2, 2), outcome.ref()));
+            new TelemetryUpdate(TENANT, VIN, Instant.parse("2026-08-12T11:59:59Z"), 2, 2, 2), outcome.ref()));
 
         var rejected = outcome.receiveMessage();
         assertFalse(rejected.accepted());
         assertEquals("Telemetry is older than current state", rejected.reason());
+    }
+
+    @Test
+    void rejectsAnUpdateForTheSameVinFromAnotherTenant() {
+        var actor = TEST_KIT.spawn(VehicleActor.create(TENANT, VIN));
+        TestProbe<VehicleActor.OutcomeReply> outcome = TEST_KIT.createTestProbe();
+
+        actor.tell(new VehicleActor.RecordTelemetry(
+            new TelemetryUpdate("tenant-b", VIN, Instant.now(), 1, 1, 1), outcome.ref()));
+
+        var rejected = outcome.receiveMessage();
+        assertFalse(rejected.accepted());
+        assertEquals("Tenant or VIN does not match entity identity", rejected.reason());
     }
 }
