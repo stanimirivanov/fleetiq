@@ -8,6 +8,11 @@ import lombok.Builder;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Inbound application boundary for registering devices, reading their metadata,
+ * and changing their lifecycle status. Expected business outcomes are represented
+ * by result types rather than exceptions.
+ */
 public interface DeviceRegistryUseCase {
 
     @Builder
@@ -32,7 +37,12 @@ public interface DeviceRegistryUseCase {
         record NotFound(String vin) implements UpdateStatusResult {}
     }
 
+    /** Registers a device, returning {@code AlreadyExists} when the VIN is already known. */
     Uni<RegisterResult> register(RegisterCommand command);
+
+    /** Returns an empty optional when no device has the supplied VIN. */
     Uni<Optional<Device>> getByVin(String vin);
+
+    /** Changes status, returning {@code NotFound} when the device does not exist. */
     Uni<UpdateStatusResult> updateStatus(UpdateStatusCommand command);
 }

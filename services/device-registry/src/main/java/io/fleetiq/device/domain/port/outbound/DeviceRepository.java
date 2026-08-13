@@ -6,6 +6,10 @@ import io.smallrye.mutiny.Uni;
 
 import java.util.Optional;
 
+/**
+ * Reactive persistence boundary for the device aggregate. An implementation owns
+ * transaction details and reports expected absence with {@link Optional}.
+ */
 public interface DeviceRepository {
     Uni<Optional<Device>> findByVin(String vin);
     Uni<Device> save(Device device);

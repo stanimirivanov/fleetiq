@@ -2,6 +2,16 @@
 
 A portfolio project demonstrating modern backend architecture patterns using **Quarkus**, **Apache Pekko**, and **PostgreSQL** with specialized extensions.
 
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Architecture baseline](docs/architecture-baseline.md)
+- [Testing strategy](docs/testing-strategy.md)
+- [Deployment ownership](docs/deployment-ownership.md)
+
+Each deployable or shared module also contains a focused `README.md` describing its
+responsibility, boundaries, runtime dependencies, and verification command.
+
 ## Architecture Overview
 
 ```mermaid
