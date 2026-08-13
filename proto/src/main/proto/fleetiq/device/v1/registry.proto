@@ -11,6 +11,7 @@ service DeviceRegistry {
     rpc RegisterDevice(RegisterDeviceRequest) returns (RegisterDeviceResponse);
     rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
     rpc UpdateDeviceStatus(UpdateDeviceStatusRequest) returns (UpdateDeviceStatusResponse);
+    rpc EnrollDevice(EnrollDeviceRequest) returns (EnrollDeviceResponse);
 }
 
 enum DeviceStatus {
@@ -51,3 +52,11 @@ message UpdateDeviceStatusRequest {
     DeviceStatus status = 2;
 }
 message UpdateDeviceStatusResponse { Device device = 1; }
+
+message EnrollDeviceRequest { string vin = 1; }
+
+// Returned once during explicit enrollment. Device read APIs never expose credentials.
+message EnrollDeviceResponse {
+    string username = 1;
+    string password = 2;
+}

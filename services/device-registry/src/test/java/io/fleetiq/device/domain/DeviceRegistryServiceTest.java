@@ -5,6 +5,7 @@ import io.fleetiq.device.domain.model.DeviceStatus;
 import io.fleetiq.device.domain.model.DeviceValidationException;
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase;
 import io.fleetiq.device.domain.port.outbound.DeviceRepository;
+import io.fleetiq.device.domain.port.outbound.DeviceCredentialProvisioner;
 import io.fleetiq.device.domain.service.DeviceRegistryService;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,9 @@ class DeviceRegistryServiceTest {
     private final StubRepository repository = new StubRepository();
     private final DeviceRegistryService service = new DeviceRegistryService(
         repository,
-        Clock.fixed(Instant.parse("2026-08-12T12:00:00Z"), ZoneOffset.UTC)
+        Clock.fixed(Instant.parse("2026-08-12T12:00:00Z"), ZoneOffset.UTC),
+        (tenantId, vin) -> Uni.createFrom().item(
+            new DeviceCredentialProvisioner.ProvisionedCredential(tenantId + "/" + vin, "one-time-secret"))
     );
 
     @Test
@@ -64,6 +67,32 @@ class DeviceRegistryServiceTest {
         ).await().indefinitely();
 
         assertInstanceOf(DeviceRegistryUseCase.UpdateStatusResult.NotFound.class, result);
+    }
+
+    @Test
+    void enrollsExistingDeviceWithTenantAndVinPrincipal() {
+        repository.device = Optional.of(device(VIN));
+
+        var result = service.enroll(new DeviceRegistryUseCase.EnrollCommand(TENANT, VIN))
+            .await().indefinitely();
+
+        var enrolled = assertInstanceOf(DeviceRegistryUseCase.EnrollResult.Enrolled.class, result);
+        assertEquals(TENANT + "/" + VIN, enrolled.username());
+        assertEquals("one-time-secret", enrolled.secret());
+    }
+
+    @Test
+    void doesNotEnrollUnknownOrDecommissionedDevice() {
+        var missing = service.enroll(new DeviceRegistryUseCase.EnrollCommand(TENANT, VIN))
+            .await().indefinitely();
+        assertInstanceOf(DeviceRegistryUseCase.EnrollResult.NotFound.class, missing);
+
+        repository.device = Optional.of(new Device(
+            VIN, "OBD", "FleetIQ", "Edge", 2025, Map.of(), DeviceStatus.DECOMMISSIONED,
+            Instant.parse("2026-08-12T12:00:00Z"), Instant.parse("2026-08-12T12:00:00Z")));
+        var decommissioned = service.enroll(new DeviceRegistryUseCase.EnrollCommand(TENANT, VIN))
+            .await().indefinitely();
+        assertInstanceOf(DeviceRegistryUseCase.EnrollResult.Decommissioned.class, decommissioned);
     }
 
     private static DeviceRegistryUseCase.RegisterCommand command(String vin) {

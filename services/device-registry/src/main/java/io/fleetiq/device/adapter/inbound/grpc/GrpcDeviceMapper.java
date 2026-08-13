@@ -5,6 +5,9 @@ import io.fleetiq.device.domain.model.DeviceStatus;
 import io.fleetiq.device.domain.model.DeviceValidationException;
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase.RegisterCommand;
 import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase.UpdateStatusCommand;
+import io.fleetiq.device.domain.port.inbound.DeviceRegistryUseCase.EnrollCommand;
+import io.fleetiq.proto.device.v1.EnrollDeviceRequest;
+import io.fleetiq.proto.device.v1.EnrollDeviceResponse;
 import io.fleetiq.proto.common.v1.Timestamp;
 import io.fleetiq.proto.device.v1.GetDeviceResponse;
 import io.fleetiq.proto.device.v1.RegisterDeviceRequest;
@@ -32,6 +35,17 @@ public class GrpcDeviceMapper {
 
     public UpdateStatusCommand toCommand(String tenantId, UpdateDeviceStatusRequest request) {
         return new UpdateStatusCommand(tenantId, request.getVin(), toDomain(request.getStatus()));
+    }
+
+    public EnrollCommand toCommand(String tenantId, EnrollDeviceRequest request) {
+        return new EnrollCommand(tenantId, request.getVin());
+    }
+
+    public EnrollDeviceResponse toEnrollResponse(String username, String secret) {
+        return EnrollDeviceResponse.newBuilder()
+            .setUsername(username)
+            .setPassword(secret)
+            .build();
     }
 
     public RegisterDeviceResponse toRegisterResponse(Device device) {
