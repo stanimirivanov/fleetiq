@@ -15,13 +15,13 @@ public class TopologyProjectionService implements TopologyProjectionUseCase {
     private final TopologyRepository repository;
 
     @Override
-    public Uni<Void> projectDevice(VehicleProjection vehicle) {
-        return repository.upsertVehicle(vehicle);
+    public Uni<Void> projectDevice(String tenantId, VehicleProjection vehicle) {
+        return repository.upsertVehicle(tenantId, vehicle);
     }
 
     @Override
-    public Uni<Void> projectPosition(String vin, double latitude, double longitude, double altitude,
+    public Uni<Void> projectPosition(String tenantId, String vin, double latitude, double longitude, double altitude,
                                      Instant observedAt) {
-        return repository.updatePosition(vin, latitude, longitude, altitude, observedAt);
+        return repository.updatePosition(tenantId, vin, latitude, longitude, altitude, observedAt);
     }
 }

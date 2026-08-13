@@ -8,6 +8,8 @@ calls to source services.
 - Persistence: relational timestamp gates and query projections alongside Apache AGE vertices and edges.
 - Consistency: duplicate and stale events are ignored using independent device and position timestamps.
 - Queries: bounded undirected traversal and distance-ordered proximity search.
+- Tenant isolation: event projections, relational keys, AGE vertices and edges, traversals,
+  and proximity searches are scoped by tenant.
 - Verify: `mvn -pl services/fleet-topology -am verify`.
 
 The relational projection provides predictable parameterized queries; AGE remains the

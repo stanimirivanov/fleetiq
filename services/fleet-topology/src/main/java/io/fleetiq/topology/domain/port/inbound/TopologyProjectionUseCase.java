@@ -10,6 +10,7 @@ import java.time.Instant;
  * eventually consistent vehicle projection.
  */
 public interface TopologyProjectionUseCase {
-    Uni<Void> projectDevice(VehicleProjection vehicle);
-    Uni<Void> projectPosition(String vin, double latitude, double longitude, double altitude, Instant observedAt);
+    Uni<Void> projectDevice(String tenantId, VehicleProjection vehicle);
+    Uni<Void> projectPosition(String tenantId, String vin, double latitude, double longitude,
+                              double altitude, Instant observedAt);
 }

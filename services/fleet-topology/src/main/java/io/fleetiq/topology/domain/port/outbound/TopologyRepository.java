@@ -11,11 +11,11 @@ import java.util.List;
  * must keep projection updates ordered so an older event cannot overwrite newer state.
  */
 public interface TopologyRepository {
-    Uni<Void> upsertVehicle(VehicleProjection vehicle);
+    Uni<Void> upsertVehicle(String tenantId, VehicleProjection vehicle);
     /** Applies a position only when {@code observedAt} is newer than the stored projection. */
-    Uni<Void> updatePosition(String vin, double latitude, double longitude, double altitude,
+    Uni<Void> updatePosition(String tenantId, String vin, double latitude, double longitude, double altitude,
                              java.time.Instant observedAt);
-    Uni<Void> createRelationship(TopologyEdge edge);
-    Uni<List<TopologyNode>> findConnectedNodes(String vin, int maxDepth);
-    Uni<List<String>> findNearby(double latitude, double longitude, double radiusKm);
+    Uni<Void> createRelationship(String tenantId, TopologyEdge edge);
+    Uni<List<TopologyNode>> findConnectedNodes(String tenantId, String vin, int maxDepth);
+    Uni<List<String>> findNearby(String tenantId, double latitude, double longitude, double radiusKm);
 }

@@ -21,9 +21,9 @@ class TopologyServiceTest {
         TopologyService service = new TopologyService(repository);
         TopologyEdge edge = new TopologyEdge("source", "target", "CONVOY", Map.of());
 
-        service.createRelationship(edge).await().indefinitely();
-        var nodes = service.getFleetGraph("source", 2).await().indefinitely();
-        var nearby = service.findNearbyVehicles(52.52, 13.405, 5).await().indefinitely();
+        service.createRelationship("tenant-a", edge).await().indefinitely();
+        var nodes = service.getFleetGraph("tenant-a", "source", 2).await().indefinitely();
+        var nearby = service.findNearbyVehicles("tenant-a", 52.52, 13.405, 5).await().indefinitely();
 
         assertSame(edge, repository.edge);
         assertEquals("source", nodes.getFirst().vin());
@@ -34,18 +34,18 @@ class TopologyServiceTest {
         private TopologyEdge edge;
 
         @Override
-        public Uni<Void> upsertVehicle(io.fleetiq.topology.domain.model.VehicleProjection vehicle) {
+        public Uni<Void> upsertVehicle(String tenantId, io.fleetiq.topology.domain.model.VehicleProjection vehicle) {
             return Uni.createFrom().voidItem();
         }
 
         @Override
-        public Uni<Void> updatePosition(String vin, double latitude, double longitude, double altitude,
+        public Uni<Void> updatePosition(String tenantId, String vin, double latitude, double longitude, double altitude,
                                         java.time.Instant observedAt) {
             return Uni.createFrom().voidItem();
         }
 
         @Override
-        public Uni<Void> createRelationship(TopologyEdge edge) {
+        public Uni<Void> createRelationship(String tenantId, TopologyEdge edge) {
             return Uni.createFrom().item(() -> {
                 this.edge = edge;
                 return null;
@@ -53,12 +53,12 @@ class TopologyServiceTest {
         }
 
         @Override
-        public Uni<List<TopologyNode>> findConnectedNodes(String vin, int maxDepth) {
+        public Uni<List<TopologyNode>> findConnectedNodes(String tenantId, String vin, int maxDepth) {
             return Uni.createFrom().item(List.of(new TopologyNode(vin, "OBD", "IDLE")));
         }
 
         @Override
-        public Uni<List<String>> findNearby(double latitude, double longitude, double radiusKm) {
+        public Uni<List<String>> findNearby(String tenantId, double latitude, double longitude, double radiusKm) {
             return Uni.createFrom().item(List.of("nearby-vin"));
         }
     }

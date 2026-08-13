@@ -10,6 +10,8 @@ import io.fleetiq.topology.domain.model.TopologyEdge;
 import io.fleetiq.topology.domain.model.TopologyNode;
 import io.fleetiq.topology.domain.port.inbound.TopologyUseCase;
 import io.smallrye.mutiny.Uni;
+import io.fleetiq.security.CurrentTenant;
+import io.fleetiq.security.TenantIdentity;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -22,7 +24,7 @@ class TopologyGrpcAdapterTest {
     @Test
     void mapsAndDelegatesEveryRpc() {
         StubUseCase useCase = new StubUseCase();
-        TopologyGrpcAdapter adapter = new TopologyGrpcAdapter(useCase, new GrpcTopologyMapper());
+        TopologyGrpcAdapter adapter = new TopologyGrpcAdapter(useCase, new GrpcTopologyMapper(), tenant());
 
         var created = adapter.createRelationship(CreateRelationshipRequest.newBuilder()
             .setSourceVin("source").setTargetVin("target")
@@ -44,7 +46,7 @@ class TopologyGrpcAdapterTest {
         private TopologyEdge edge;
 
         @Override
-        public Uni<Void> createRelationship(TopologyEdge edge) {
+        public Uni<Void> createRelationship(String tenantId, TopologyEdge edge) {
             return Uni.createFrom().item(() -> {
                 this.edge = edge;
                 return null;
@@ -52,13 +54,21 @@ class TopologyGrpcAdapterTest {
         }
 
         @Override
-        public Uni<List<TopologyNode>> getFleetGraph(String rootVin, int maxDepth) {
+        public Uni<List<TopologyNode>> getFleetGraph(String tenantId, String rootVin, int maxDepth) {
             return Uni.createFrom().item(List.of(new TopologyNode(rootVin, "OBD", "MOVING")));
         }
 
         @Override
-        public Uni<List<String>> findNearbyVehicles(double latitude, double longitude, double radiusKm) {
+        public Uni<List<String>> findNearbyVehicles(String tenantId, double latitude, double longitude, double radiusKm) {
             return Uni.createFrom().item(List.of("nearby-vin"));
         }
+    }
+
+    private static CurrentTenant tenant() {
+        return new CurrentTenant() {
+            @Override public TenantIdentity get() {
+                return new TenantIdentity("tenant-a", "test", java.util.Set.of("operator"));
+            }
+        };
     }
 }
