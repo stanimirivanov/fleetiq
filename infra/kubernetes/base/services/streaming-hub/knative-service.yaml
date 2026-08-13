@@ -26,6 +26,13 @@ spec:
           ports:
             - containerPort: 8085
               name: http
+          env:
+            - name: FLEETIQ_MQTT_HOST
+              value: mosquitto.fleetiq.svc.cluster.local
+            - name: FLEETIQ_MQTT_USERNAME
+              value: streaming-hub
+            - name: FLEETIQ_MQTT_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: streaming-hub-password}}
           resources:
             requests:
               memory: "128Mi"

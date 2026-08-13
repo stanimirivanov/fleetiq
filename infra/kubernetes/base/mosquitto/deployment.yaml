@@ -20,6 +20,16 @@ spec:
       containers:
         - name: mosquitto
           image: eclipse-mosquitto:2.0
+          command: ["/bin/sh", "/mosquitto/config/start-secure.sh"]
+          env:
+            - name: TELEMETRY_INGESTION_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: telemetry-ingestion-password}}
+            - name: DEVICE_REGISTRY_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: device-registry-password}}
+            - name: FLEET_TOPOLOGY_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: fleet-topology-password}}
+            - name: STREAMING_HUB_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: streaming-hub-password}}
           ports:
             - containerPort: 1883
               name: mqtt
@@ -29,6 +39,11 @@ spec:
             - name: config
               mountPath: /mosquitto/config/mosquitto.conf
               subPath: mosquitto.conf
+            - name: config
+              mountPath: /mosquitto/config/start-secure.sh
+              subPath: start-secure.sh
+            - name: runtime
+              mountPath: /mosquitto/runtime
             - name: data
               mountPath: /mosquitto/data
           resources:
@@ -53,4 +68,6 @@ spec:
           configMap:
             name: mosquitto-config
         - name: data
+          emptyDir: {}
+        - name: runtime
           emptyDir: {}

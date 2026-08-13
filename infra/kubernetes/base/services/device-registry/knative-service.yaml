@@ -30,6 +30,12 @@ spec:
             - containerPort: 8082
               name: http
           env:
+            - name: FLEETIQ_MQTT_HOST
+              value: mosquitto.fleetiq.svc.cluster.local
+            - name: FLEETIQ_MQTT_USERNAME
+              value: device-registry
+            - name: FLEETIQ_MQTT_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: device-registry-password}}
             - name: QUARKUS_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:

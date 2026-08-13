@@ -21,4 +21,29 @@ data:
     max_inflight_messages 100
     max_queued_messages 1000
 
-    allow_anonymous true
+    allow_anonymous false
+    password_file /mosquitto/runtime/passwords
+    acl_file /mosquitto/runtime/acl
+  start-secure.sh: |
+    #!/bin/sh
+    set -eu
+    mkdir -p /mosquitto/runtime
+    mosquitto_passwd -b -c /mosquitto/runtime/passwords telemetry-ingestion "$TELEMETRY_INGESTION_PASSWORD"
+    mosquitto_passwd -b /mosquitto/runtime/passwords device-registry "$DEVICE_REGISTRY_PASSWORD"
+    mosquitto_passwd -b /mosquitto/runtime/passwords fleet-topology "$FLEET_TOPOLOGY_PASSWORD"
+    mosquitto_passwd -b /mosquitto/runtime/passwords streaming-hub "$STREAMING_HUB_PASSWORD"
+    chmod 600 /mosquitto/runtime/passwords
+    cat > /mosquitto/runtime/acl <<'EOF'
+    user telemetry-ingestion
+    topic read fleetiq/+/+/telemetry
+    topic write fleetiq/events/position-projections
+    user device-registry
+    topic write fleetiq/events/device-projections
+    user fleet-topology
+    topic read fleetiq/events/device-projections
+    topic read fleetiq/events/position-projections
+    user streaming-hub
+    topic read fleetiq/+/+/telemetry
+    EOF
+    chmod 600 /mosquitto/runtime/acl
+    exec mosquitto -c /mosquitto/config/mosquitto.conf

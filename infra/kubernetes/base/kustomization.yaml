@@ -13,6 +13,7 @@ resources:
   - mosquitto/deployment.yaml
   - mosquitto/service.yaml
   - mosquitto/configmap.yaml
+  - mosquitto/credentials-secret.yaml
   - keycloak/deployment.yaml
   - keycloak/service.yaml
   - monitoring/otel-collector.yaml
