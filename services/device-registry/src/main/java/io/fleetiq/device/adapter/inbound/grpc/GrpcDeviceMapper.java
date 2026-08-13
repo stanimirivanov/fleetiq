@@ -18,8 +18,9 @@ import java.time.Instant;
 @ApplicationScoped
 public class GrpcDeviceMapper {
 
-    public RegisterCommand toCommand(RegisterDeviceRequest request) {
+    public RegisterCommand toCommand(String tenantId, RegisterDeviceRequest request) {
         return new RegisterCommand(
+            tenantId,
             request.getVin(),
             request.getDeviceType(),
             request.getManufacturer(),
@@ -29,8 +30,8 @@ public class GrpcDeviceMapper {
         );
     }
 
-    public UpdateStatusCommand toCommand(UpdateDeviceStatusRequest request) {
-        return new UpdateStatusCommand(request.getVin(), toDomain(request.getStatus()));
+    public UpdateStatusCommand toCommand(String tenantId, UpdateDeviceStatusRequest request) {
+        return new UpdateStatusCommand(tenantId, request.getVin(), toDomain(request.getStatus()));
     }
 
     public RegisterDeviceResponse toRegisterResponse(Device device) {

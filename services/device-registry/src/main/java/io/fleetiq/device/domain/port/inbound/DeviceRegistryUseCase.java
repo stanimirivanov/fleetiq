@@ -17,6 +17,7 @@ public interface DeviceRegistryUseCase {
 
     @Builder
     record RegisterCommand(
+        String tenantId,
         String vin,
         String deviceType,
         String manufacturer,
@@ -25,7 +26,7 @@ public interface DeviceRegistryUseCase {
         Map<String, String> capabilities
     ) {}
 
-    record UpdateStatusCommand(String vin, DeviceStatus status) {}
+    record UpdateStatusCommand(String tenantId, String vin, DeviceStatus status) {}
 
     sealed interface RegisterResult {
         record Registered(Device device) implements RegisterResult {}
@@ -41,7 +42,7 @@ public interface DeviceRegistryUseCase {
     Uni<RegisterResult> register(RegisterCommand command);
 
     /** Returns an empty optional when no device has the supplied VIN. */
-    Uni<Optional<Device>> getByVin(String vin);
+    Uni<Optional<Device>> getByVin(String tenantId, String vin);
 
     /** Changes status, returning {@code NotFound} when the device does not exist. */
     Uni<UpdateStatusResult> updateStatus(UpdateStatusCommand command);

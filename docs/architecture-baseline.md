@@ -45,6 +45,13 @@ The migration must be performed as one compatibility change per service:
 
 No adapter may silently substitute a default tenant. MQTT must first gain an authenticated device-to-tenant mapping; until then, multi-tenant mode is not production-ready.
 
+### Rollout status
+
+- Device Registry scopes gRPC commands, repository queries, database uniqueness, and
+  projection events by authenticated tenant.
+- Telemetry, topology, maintenance, streaming, and actor state still require the same
+  explicit tenant migration before multi-tenant production use.
+
 ## API compatibility
 
 - Protobuf field numbers are permanent and removed fields are reserved.

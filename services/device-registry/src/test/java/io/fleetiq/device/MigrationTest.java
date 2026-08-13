@@ -17,7 +17,11 @@ class MigrationTest {
         try (var connection = dataSource.getConnection(); var statement = connection.createStatement()) {
             try (var result = statement.executeQuery("SELECT count(*) FROM flyway_schema_history WHERE success")) {
                 assertTrue(result.next());
-                assertEquals(2, result.getInt(1));
+                assertEquals(3, result.getInt(1));
+            }
+            try (var result = statement.executeQuery("SELECT count(*) FROM information_schema.columns WHERE table_name = 'devices' AND column_name = 'tenant_id' AND is_nullable = 'NO'")) {
+                assertTrue(result.next());
+                assertEquals(1, result.getInt(1));
             }
             try (var result = statement.executeQuery("SELECT to_regclass('public.projection_outbox') IS NOT NULL")) {
                 assertTrue(result.next());
