@@ -40,6 +40,15 @@ services:
     volumes:
       - mosquitto_data:/mosquitto/data
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/start-secure.sh:/mosquitto/config/start-secure.sh:ro
+    entrypoint: ["/bin/sh", "/mosquitto/config/start-secure.sh"]
+    environment:
+      TELEMETRY_INGESTION_PASSWORD: ${TELEMETRY_INGESTION_MQTT_PASSWORD:-telemetry-ingestion-dev}
+      DEVICE_REGISTRY_PASSWORD: ${DEVICE_REGISTRY_MQTT_PASSWORD:-device-registry-dev}
+      FLEET_TOPOLOGY_PASSWORD: ${FLEET_TOPOLOGY_MQTT_PASSWORD:-fleet-topology-dev}
+      STREAMING_HUB_PASSWORD: ${STREAMING_HUB_MQTT_PASSWORD:-streaming-hub-dev}
+      SIMULATOR_TENANT: ${FLEETIQ_TENANT_ID:-demo}
+      SIMULATOR_PASSWORD: ${SIMULATOR_MQTT_PASSWORD:-simulator-demo-dev}
     networks:
       - fleetiq-net
 

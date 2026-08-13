@@ -27,6 +27,12 @@ spec:
             - containerPort: 8083
               name: http
           env:
+            - name: FLEETIQ_MQTT_HOST
+              value: mosquitto.fleetiq.svc.cluster.local
+            - name: FLEETIQ_MQTT_USERNAME
+              value: fleet-topology
+            - name: FLEETIQ_MQTT_PASSWORD
+              valueFrom: {secretKeyRef: {name: mqtt-credentials, key: fleet-topology-password}}
             - name: QUARKUS_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
