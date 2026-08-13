@@ -20,7 +20,8 @@ public class PredictorService implements PredictMaintenanceUseCase {
     private final MaintenanceRepository repository;
 
     @Override
-    public Uni<PredictionResult> predict(String vin, int lookbackDays) {
+    public Uni<PredictionResult> predict(String tenantId, String vin, int lookbackDays) {
+        validateTenant(tenantId);
         log.info("Predicting maintenance for VIN: {}, lookback: {} days", vin, lookbackDays);
         // AI integration in Phase 4 — placeholder for now
         return Uni.createFrom().item(() ->
@@ -37,13 +38,21 @@ public class PredictorService implements PredictMaintenanceUseCase {
     }
 
     @Override
-    public Uni<MaintenanceRecord> recordEvent(MaintenanceRecord record) {
+    public Uni<MaintenanceRecord> recordEvent(String tenantId, MaintenanceRecord record) {
+        validateTenant(tenantId);
         log.info("Recording maintenance event for VIN: {}", record.vin());
-        return repository.saveEvent(record);
+        return repository.saveEvent(tenantId, record);
     }
 
     @Override
-    public Uni<List<PredictionResult>> getHistory(String vin, int limit) {
-        return repository.findPredictionsByVin(vin, limit);
+    public Uni<List<PredictionResult>> getHistory(String tenantId, String vin, int limit) {
+        validateTenant(tenantId);
+        return repository.findPredictionsByVin(tenantId, vin, limit);
+    }
+
+    private static void validateTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalArgumentException("Tenant ID is required");
+        }
     }
 }

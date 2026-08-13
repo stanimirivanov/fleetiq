@@ -11,8 +11,8 @@ import java.util.List;
  * storage-specific JSON and entity representations outside the domain layer.
  */
 public interface MaintenanceRepository {
-    Uni<MaintenanceRecord> saveEvent(MaintenanceRecord record);
-    Uni<PredictionResult> savePrediction(PredictionResult prediction);
-    Uni<List<MaintenanceRecord>> findEventsByVin(String vin);
-    Uni<List<PredictionResult>> findPredictionsByVin(String vin, int limit);
+    Uni<MaintenanceRecord> saveEvent(String tenantId, MaintenanceRecord record);
+    Uni<PredictionResult> savePrediction(String tenantId, PredictionResult prediction);
+    Uni<List<MaintenanceRecord>> findEventsByVin(String tenantId, String vin);
+    Uni<List<PredictionResult>> findPredictionsByVin(String tenantId, String vin, int limit);
 }
