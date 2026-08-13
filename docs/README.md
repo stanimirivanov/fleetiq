@@ -3,6 +3,8 @@
 This directory contains information that applies across module boundaries. Start with
 the repository README for setup, then use the following documents as needed:
 
+- [Implementation roadmap](implementation-roadmap.md) — phased goals, acceptance criteria, and trackable tasks.
+
 - [Architecture baseline](architecture-baseline.md) — module boundaries and dependency rules.
 - [Testing strategy](testing-strategy.md) — test layers, ownership, and commands.
 - [Deployment ownership](deployment-ownership.md) — where Kubernetes and deployment assets belong.
