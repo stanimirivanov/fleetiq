@@ -18,10 +18,10 @@ public class PostgresDeviceRepository implements DeviceRepository {
 
     @Override
     public Uni<Optional<Device>> findByVin(String vin) {
-        return DeviceEntity.<DeviceEntity>findById(vin)
-            .map(entity ->
-                Optional.ofNullable(entity).map(mapper::toDomain)
-            );
+        return Panache.withSession(() ->
+            DeviceEntity.<DeviceEntity>findById(vin)
+                .map(entity -> Optional.ofNullable(entity).map(mapper::toDomain))
+        );
     }
 
     @Override
