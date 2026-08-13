@@ -18,7 +18,7 @@ data:
 
     quarkus.messaging.mqtt.telemetry-ingest.host=mosquitto.fleetiq.svc.cluster.local
     quarkus.messaging.mqtt.telemetry-ingest.port=1883
-    quarkus.messaging.mqtt.telemetry-ingest.topic=fleetiq/+/telemetry
+    quarkus.messaging.mqtt.telemetry-ingest.topic=fleetiq/+/+/telemetry
     quarkus.messaging.mqtt.telemetry-ingest.qos=1
 
     quarkus.otel.exporter.otlp.endpoint=http://otel-collector.fleetiq.svc.cluster.local:4317

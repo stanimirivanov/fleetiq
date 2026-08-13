@@ -37,7 +37,7 @@ class TimescaleTelemetryRepositoryIT extends TelemetryRepositoryContract {
     @RunOnVertxContext
     void savesTelemetryAndOutboxEventAtomically(UniAsserter asserter) {
         asserter.execute(this::resetRepository);
-        asserter.execute(() -> repository.save(new TelemetrySample(
+        asserter.execute(() -> repository.save("tenant-a", new TelemetrySample(
             "2HGFC2F59JH000001", Instant.parse("2026-08-13T08:00:00Z"),
             52.52, 13.405, 34, 72, 68, 91, 12.7, Map.of())));
         asserter.assertThat(() -> pgPool.query("SELECT payload FROM projection_outbox").execute(), rows -> {
@@ -46,6 +46,7 @@ class TimescaleTelemetryRepositoryIT extends TelemetryRepositoryContract {
                 var event = PositionProjectionEvent.parseFrom(rows.iterator().next().getBuffer("payload").getBytes());
                 assertEquals("2HGFC2F59JH000001", event.getVin());
                 assertEquals(52.52, event.getLatitude());
+                assertEquals("tenant-a", event.getTenantId());
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 throw new AssertionError(e);
             }

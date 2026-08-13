@@ -19,9 +19,10 @@ public class TelemetryIngestionService implements IngestTelemetryUseCase {
     private final TelemetryRepository telemetryRepository;
 
     @Override
-    public Uni<IngestResult> ingest(TelemetrySample sample) {
+    public Uni<IngestResult> ingest(String tenantId, TelemetrySample sample) {
+        validateTenant(tenantId);
         log.debug("Ingesting telemetry for VIN: {}", sample.vin());
-        return telemetryRepository.save(sample)
+        return telemetryRepository.save(tenantId, sample)
             .map(ignored -> new IngestResult(true, "Telemetry accepted"))
             .onFailure().recoverWithItem(e -> {
                 log.error("Failed to ingest telemetry for VIN: {}", sample.vin(), e);
@@ -30,12 +31,20 @@ public class TelemetryIngestionService implements IngestTelemetryUseCase {
     }
 
     @Override
-    public Uni<List<TelemetrySample>> getTelemetryRange(String vin, Instant from, Instant to) {
-        return telemetryRepository.findByVinAndTimeRange(vin, from, to);
+    public Uni<List<TelemetrySample>> getTelemetryRange(String tenantId, String vin, Instant from, Instant to) {
+        validateTenant(tenantId);
+        return telemetryRepository.findByVinAndTimeRange(tenantId, vin, from, to);
     }
 
     @Override
-    public Uni<Double> getAverageSpeed(String vin, Instant from, Instant to) {
-        return telemetryRepository.getAverageSpeed(vin, from, to);
+    public Uni<Double> getAverageSpeed(String tenantId, String vin, Instant from, Instant to) {
+        validateTenant(tenantId);
+        return telemetryRepository.getAverageSpeed(tenantId, vin, from, to);
+    }
+
+    private static void validateTenant(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalArgumentException("Tenant ID is required");
+        }
     }
 }

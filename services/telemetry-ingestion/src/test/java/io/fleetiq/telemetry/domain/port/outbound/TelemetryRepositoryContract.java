@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class TelemetryRepositoryContract {
 
     private static final String VIN = "1HGCM82633A004352";
+    private static final String TENANT = "tenant-a";
     private static final Instant FIRST = Instant.parse("2026-08-13T08:00:00Z");
     private static final Instant SECOND = Instant.parse("2026-08-13T08:05:00Z");
 
@@ -25,11 +26,11 @@ public abstract class TelemetryRepositoryContract {
     @RunOnVertxContext
     void savesAndReturnsSamplesInNewestFirstOrder(UniAsserter asserter) {
         asserter.execute(this::resetRepository);
-        asserter.execute(() -> repository().save(sample(VIN, FIRST, 40.0, Map.of("oil_pressure", 3.4))));
-        asserter.execute(() -> repository().save(sample(VIN, SECOND, 80.0, Map.of("oil_pressure", 3.8))));
-        asserter.execute(() -> repository().save(sample("WVWZZZ1JZXW000001", SECOND, 120.0, Map.of())));
+        asserter.execute(() -> repository().save(TENANT, sample(VIN, FIRST, 40.0, Map.of("oil_pressure", 3.4))));
+        asserter.execute(() -> repository().save(TENANT, sample(VIN, SECOND, 80.0, Map.of("oil_pressure", 3.8))));
+        asserter.execute(() -> repository().save(TENANT, sample("WVWZZZ1JZXW000001", SECOND, 120.0, Map.of())));
         asserter.assertThat(
-            () -> repository().findByVinAndTimeRange(VIN, FIRST.minusSeconds(1), SECOND.plusSeconds(1)),
+            () -> repository().findByVinAndTimeRange(TENANT, VIN, FIRST.minusSeconds(1), SECOND.plusSeconds(1)),
             samples -> {
                 assertEquals(2, samples.size());
                 assertEquals(SECOND, samples.get(0).timestamp());
@@ -44,12 +45,12 @@ public abstract class TelemetryRepositoryContract {
     @RunOnVertxContext
     void calculatesAverageSpeedInsideRequestedRange(UniAsserter asserter) {
         asserter.execute(this::resetRepository);
-        asserter.execute(() -> repository().save(sample(VIN, FIRST, 40.0, Map.of())));
-        asserter.execute(() -> repository().save(sample(VIN, SECOND, 80.0, Map.of())));
+        asserter.execute(() -> repository().save(TENANT, sample(VIN, FIRST, 40.0, Map.of())));
+        asserter.execute(() -> repository().save(TENANT, sample(VIN, SECOND, 80.0, Map.of())));
         asserter.assertEquals(
-            () -> repository().getAverageSpeed(VIN, FIRST.minusSeconds(1), SECOND.plusSeconds(1)), 60.0);
+            () -> repository().getAverageSpeed(TENANT, VIN, FIRST.minusSeconds(1), SECOND.plusSeconds(1)), 60.0);
         asserter.assertEquals(
-            () -> repository().getAverageSpeed(VIN, SECOND, SECOND.plusSeconds(1)), 80.0);
+            () -> repository().getAverageSpeed(TENANT, VIN, SECOND, SECOND.plusSeconds(1)), 80.0);
     }
 
     @Test
@@ -57,9 +58,23 @@ public abstract class TelemetryRepositoryContract {
     void returnsNeutralResultsWhenNoSamplesMatch(UniAsserter asserter) {
         asserter.execute(this::resetRepository);
         asserter.assertThat(
-            () -> repository().findByVinAndTimeRange(VIN, FIRST, SECOND),
+            () -> repository().findByVinAndTimeRange(TENANT, VIN, FIRST, SECOND),
             samples -> assertTrue(samples.isEmpty()));
-        asserter.assertEquals(() -> repository().getAverageSpeed(VIN, FIRST, SECOND), 0.0);
+        asserter.assertEquals(() -> repository().getAverageSpeed(TENANT, VIN, FIRST, SECOND), 0.0);
+    }
+
+    @Test
+    @RunOnVertxContext
+    void isolatesIdenticalVinsAcrossTenants(UniAsserter asserter) {
+        asserter.execute(this::resetRepository);
+        asserter.execute(() -> repository().save("tenant-a", sample(VIN, FIRST, 40.0, Map.of())));
+        asserter.execute(() -> repository().save("tenant-b", sample(VIN, SECOND, 80.0, Map.of())));
+        asserter.assertThat(
+            () -> repository().findByVinAndTimeRange("tenant-a", VIN, FIRST.minusSeconds(1), SECOND.plusSeconds(1)),
+            samples -> {
+                assertEquals(1, samples.size());
+                assertEquals(FIRST, samples.getFirst().timestamp());
+            });
     }
 
     private static TelemetrySample sample(String vin, Instant timestamp, double speed, Map<String, Double> metrics) {

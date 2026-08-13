@@ -19,4 +19,5 @@ message PositionProjectionEvent {
   double longitude = 3;
   double altitude = 4;
   int64 observed_at_epoch_millis = 5;
+  string tenant_id = 6;
 }

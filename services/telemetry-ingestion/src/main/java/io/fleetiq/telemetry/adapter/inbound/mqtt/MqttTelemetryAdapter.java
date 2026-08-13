@@ -24,8 +24,8 @@ public class MqttTelemetryAdapter {
 
     @Incoming("telemetry-in")
     public Uni<Void> consume(MqttMessage<byte[]> message) {
-        return Uni.createFrom().item(() -> toDomain(message))
-            .onItem().transformToUni(useCase::ingest)
+        return Uni.createFrom().item(() -> toEnvelope(message))
+            .onItem().transformToUni(envelope -> useCase.ingest(envelope.tenantId(), envelope.sample()))
             .onItem().transformToUni(result -> result.accepted()
                 ? Uni.createFrom().voidItem()
                 : Uni.createFrom().failure(new IllegalStateException(result.message())))
@@ -34,15 +34,19 @@ public class MqttTelemetryAdapter {
     }
 
     TelemetrySample toDomain(MqttMessage<byte[]> message) {
+        return toEnvelope(message).sample();
+    }
+
+    private TelemetryEnvelope toEnvelope(MqttMessage<byte[]> message) {
         try {
             TelemetryPayload payload = objectMapper.readValue(message.getPayload(), TelemetryPayload.class);
-            validate(message.getTopic(), payload);
-            return new TelemetrySample(
+            String tenantId = validate(message.getTopic(), payload);
+            return new TelemetryEnvelope(tenantId, new TelemetrySample(
                 payload.vin(), Instant.parse(payload.timestamp()),
                 payload.latitude(), payload.longitude(), payload.altitude(),
                 payload.speedKmh(), payload.fuelLevelPct(), payload.engineTempCelsius(),
                 payload.batteryVoltage(), payload.customMetrics() == null ? Map.of() : payload.customMetrics()
-            );
+            ));
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Telemetry timestamp must be ISO-8601", e);
         } catch (IllegalArgumentException e) {
@@ -52,13 +56,14 @@ public class MqttTelemetryAdapter {
         }
     }
 
-    private static void validate(String topic, TelemetryPayload payload) {
+    private static String validate(String topic, TelemetryPayload payload) {
         if (payload.vin() == null || payload.vin().isBlank()) {
             throw new IllegalArgumentException("VIN is required");
         }
         String[] segments = topic.split("/");
-        if (segments.length != 3 || !"fleetiq".equals(segments[0])
-            || !payload.vin().equals(segments[1]) || !"telemetry".equals(segments[2])) {
+        if (segments.length != 4 || !"fleetiq".equals(segments[0])
+            || segments[1].isBlank() || !payload.vin().equals(segments[2])
+            || !"telemetry".equals(segments[3])) {
             throw new IllegalArgumentException("Topic VIN does not match payload VIN");
         }
         if (payload.latitude() < -90 || payload.latitude() > 90
@@ -68,7 +73,10 @@ public class MqttTelemetryAdapter {
         if (payload.speedKmh() < 0 || payload.fuelLevelPct() < 0 || payload.fuelLevelPct() > 100) {
             throw new IllegalArgumentException("Invalid telemetry measurement");
         }
+        return segments[1];
     }
+
+    private record TelemetryEnvelope(String tenantId, TelemetrySample sample) {}
 
     record TelemetryPayload(
         String vin,

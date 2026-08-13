@@ -4,6 +4,7 @@ import io.fleetiq.proto.telemetry.v1.*;
 import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase;
 import io.fleetiq.telemetry.domain.port.inbound.IngestTelemetryUseCase.IngestResult;
 import io.fleetiq.security.TenantSecured;
+import io.fleetiq.security.CurrentTenant;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -19,13 +20,14 @@ public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.Telemetry
 
     private final IngestTelemetryUseCase useCase;
     private final TelemetryGrpcMapper mapper;
+    private final CurrentTenant currentTenant;
 
     @Override
     @RolesAllowed({"device", "service"})
     public Uni<IngestTelemetryResponse> ingestTelemetry(IngestTelemetryRequest request) {
         var sample = mapper.toDomain(request.getSample());
 
-        return useCase.ingest(sample)
+        return useCase.ingest(currentTenant.get().tenantId(), sample)
             .map(result -> IngestTelemetryResponse.newBuilder()
                 .setAccepted(result.accepted())
                 .setMessage(result.message())
@@ -38,7 +40,8 @@ public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.Telemetry
         return requestStream
             .onItem().transform(mapper::toDomain)
             // ✅ Concatenate processes incoming items sequentially with backpressure controls
-            .onItem().transformToUniAndConcatenate(useCase::ingest)
+            .onItem().transformToUniAndConcatenate(sample ->
+                useCase.ingest(currentTenant.get().tenantId(), sample))
             // ✅ Accumulate stream results safely without multi-threading race conditions
             .collect().in(BatchAccumulator::new, BatchAccumulator::accumulate)
             .map(BatchAccumulator::toResponse);

@@ -56,7 +56,7 @@ class MqttTelemetryAdapterTest {
             client.connect(options);
             MqttMessage message = new MqttMessage(payload.getBytes(StandardCharsets.UTF_8));
             message.setQos(1);
-            client.publish("fleetiq/" + vin + "/telemetry", message);
+            client.publish("fleetiq/tenant-a/" + vin + "/telemetry", message);
             client.disconnect();
         }
 

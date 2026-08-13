@@ -34,7 +34,7 @@ class TelemetryIngestionServiceTest {
             65.0, 50.0, 95.0, 12.8, Map.of()
         );
 
-        IngestTelemetryUseCase.IngestResult result = service.ingest(sample)
+        IngestTelemetryUseCase.IngestResult result = service.ingest("tenant-a", sample)
             .await().indefinitely();
 
         assertTrue(result.accepted());
@@ -55,7 +55,7 @@ class TelemetryIngestionServiceTest {
             30.0, 40.0, 85.0, 11.5, metrics
         );
 
-        IngestTelemetryUseCase.IngestResult result = service.ingest(sample)
+        IngestTelemetryUseCase.IngestResult result = service.ingest("tenant-a", sample)
             .await().indefinitely();
 
         assertTrue(result.accepted());
@@ -64,19 +64,20 @@ class TelemetryIngestionServiceTest {
     private static final class InMemoryTelemetryRepository implements TelemetryRepository {
 
         @Override
-        public io.smallrye.mutiny.Uni<Void> save(TelemetrySample sample) {
+        public io.smallrye.mutiny.Uni<Void> save(String tenantId, TelemetrySample sample) {
             return io.smallrye.mutiny.Uni.createFrom().voidItem();
         }
 
         @Override
         public io.smallrye.mutiny.Uni<List<TelemetrySample>> findByVinAndTimeRange(
-            String vin, Instant from, Instant to
+            String tenantId, String vin, Instant from, Instant to
         ) {
             return io.smallrye.mutiny.Uni.createFrom().item(List.of());
         }
 
         @Override
-        public io.smallrye.mutiny.Uni<Double> getAverageSpeed(String vin, Instant from, Instant to) {
+        public io.smallrye.mutiny.Uni<Double> getAverageSpeed(
+            String tenantId, String vin, Instant from, Instant to) {
             return io.smallrye.mutiny.Uni.createFrom().item(0.0);
         }
     }
