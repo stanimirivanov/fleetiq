@@ -6,6 +6,10 @@ import io.smallrye.mutiny.Uni;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Reactive persistence boundary for telemetry samples and time-window aggregates.
+ * Callers remain independent of TimescaleDB and its query model.
+ */
 public interface TelemetryRepository {
 
     Uni<Void> save(TelemetrySample sample);
