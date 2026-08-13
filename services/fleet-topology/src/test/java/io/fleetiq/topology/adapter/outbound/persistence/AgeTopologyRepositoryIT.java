@@ -1,6 +1,7 @@
 package io.fleetiq.topology.adapter.outbound.persistence;
 
 import io.fleetiq.topology.domain.model.VehicleProjection;
+import io.fleetiq.topology.domain.model.TopologyEdge;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
@@ -9,6 +10,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -54,11 +56,54 @@ class AgeTopologyRepositoryIT {
         });
     }
 
+    @Test
+    @RunOnVertxContext
+    void createsRelationshipIdempotentlyAndTraversesToBoundedDepth(UniAsserter asserter) {
+        String second = "JH4TB2H26CC000001";
+        String third = "2HGFC2F59JH000001";
+        asserter.execute(this::reset);
+        asserter.execute(() -> repository.upsertVehicle(vehicle(VIN, "ACTIVE", NEWER)));
+        asserter.execute(() -> repository.upsertVehicle(vehicle(second, "IDLE", NEWER)));
+        asserter.execute(() -> repository.upsertVehicle(vehicle(third, "MAINTENANCE", NEWER)));
+        asserter.execute(() -> repository.createRelationship(
+            new TopologyEdge(VIN, second, "CONVOY", Map.of("lane", "west"))));
+        asserter.execute(() -> repository.createRelationship(
+            new TopologyEdge(VIN, second, "CONVOY", Map.of("lane", "east"))));
+        asserter.execute(() -> repository.createRelationship(
+            new TopologyEdge(second, third, "TRAILER", Map.of())));
+
+        asserter.assertThat(() -> repository.findConnectedNodes(VIN, 1), nodes ->
+            assertEquals(java.util.List.of(VIN, second), nodes.stream().map(node -> node.vin()).toList()));
+        asserter.assertThat(() -> repository.findConnectedNodes(VIN, 2), nodes ->
+            assertEquals(java.util.List.of(VIN, second, third), nodes.stream().map(node -> node.vin()).toList()));
+        asserter.assertThat(() -> pgPool.query("SELECT count(*) AS count FROM topology_relationship_projection")
+            .execute(), rows -> assertEquals(2L, rows.iterator().next().getLong("count")));
+    }
+
+    @Test
+    @RunOnVertxContext
+    void findsNearbyVehiclesOrderedByDistance(UniAsserter asserter) {
+        String nearby = "JH4TB2H26CC000001";
+        String distant = "2HGFC2F59JH000001";
+        asserter.execute(this::reset);
+        asserter.execute(() -> repository.updatePosition(VIN, 52.5200, 13.4050, 34, NEWER));
+        asserter.execute(() -> repository.updatePosition(nearby, 52.5210, 13.4050, 34, NEWER));
+        asserter.execute(() -> repository.updatePosition(distant, 53.0, 13.4050, 34, NEWER));
+        asserter.assertThat(() -> repository.findNearby(52.5200, 13.4050, 1), vins ->
+            assertEquals(java.util.List.of(VIN, nearby), vins));
+    }
+
     private io.smallrye.mutiny.Uni<?> reset() {
-        return pgPool.query("TRUNCATE TABLE topology_vehicle_projection").execute();
+        return pgPool.query(
+            "TRUNCATE TABLE topology_relationship_projection, topology_vehicle_projection")
+            .execute();
     }
 
     private static VehicleProjection vehicle(String status, Instant updatedAt) {
-        return new VehicleProjection(VIN, "OBD", status, null, null, null, updatedAt, null);
+        return vehicle(VIN, status, updatedAt);
+    }
+
+    private static VehicleProjection vehicle(String vin, String status, Instant updatedAt) {
+        return new VehicleProjection(vin, "OBD", status, null, null, null, updatedAt, null);
     }
 }
