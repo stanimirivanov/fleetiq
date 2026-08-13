@@ -8,10 +8,10 @@ spec:
     - fleet-topology.fleetiq.svc.cluster.local
   http:
     - match:
-        - port: 9003
+        - port: 8083
       route:
         - destination:
             host: fleet-topology.fleetiq.svc.cluster.local
             port:
-              number: 9003
+              number: 8083
       timeout: 10s

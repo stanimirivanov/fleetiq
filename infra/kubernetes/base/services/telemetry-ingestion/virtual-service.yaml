@@ -19,11 +19,3 @@ spec:
         attempts: 3
         perTryTimeout: 3s
         retryOn: connect-failure,refused-stream,unavailable
-    - match:
-        - port: 9001
-      route:
-        - destination:
-            host: telemetry-ingestion.fleetiq.svc.cluster.local
-            port:
-              number: 9001
-      timeout: 30s

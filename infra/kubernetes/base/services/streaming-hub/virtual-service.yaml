@@ -8,10 +8,10 @@ spec:
     - streaming-hub.fleetiq.svc.cluster.local
   http:
     - match:
-        - port: 9005
+        - port: 8085
       route:
         - destination:
             host: streaming-hub.fleetiq.svc.cluster.local
             port:
-              number: 9005
+              number: 8085
       timeout: 0s  # Infinite timeout for streaming

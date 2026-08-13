@@ -8,12 +8,16 @@ import io.fleetiq.proto.topology.v1.GetFleetGraphRequest;
 import io.fleetiq.proto.topology.v1.GetFleetGraphResponse;
 import io.fleetiq.proto.topology.v1.MutinyFleetTopologyGrpc;
 import io.fleetiq.topology.domain.port.inbound.TopologyUseCase;
+import io.fleetiq.security.TenantSecured;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import lombok.RequiredArgsConstructor;
+import jakarta.annotation.security.RolesAllowed;
 
 @GrpcService
 @RequiredArgsConstructor
+@TenantSecured
+@RolesAllowed({"operator", "service"})
 public class TopologyGrpcAdapter extends MutinyFleetTopologyGrpc.FleetTopologyImplBase {
 
     private final TopologyUseCase useCase;

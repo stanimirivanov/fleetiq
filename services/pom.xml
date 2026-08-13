@@ -30,5 +30,18 @@
             <groupId>io.fleetiq</groupId>
             <artifactId>fleetiq-proto</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.fleetiq</groupId>
+            <artifactId>fleetiq-security-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
     </dependencies>
 </project>

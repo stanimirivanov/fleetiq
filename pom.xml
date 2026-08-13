@@ -16,6 +16,7 @@
 
     <modules>
         <module>proto</module>
+        <module>security-common</module>
         <module>services</module>
         <module>pekko-cluster</module>
         <module>simulator</module>
