@@ -25,6 +25,7 @@ class MqttTelemetryMappingTest {
         adapter.consume(message("VIN-123", "VIN-123")).await().indefinitely();
 
         assertEquals("VIN-123", useCase.sample.vin());
+        assertEquals("tenant-a", useCase.tenantId);
         assertEquals(52.52, useCase.sample.latitude());
         assertEquals(3.4, useCase.sample.customMetrics().get("oil_pressure"));
     }
@@ -45,7 +46,7 @@ class MqttTelemetryMappingTest {
              "batteryVoltage":12.7,"customMetrics":{"oil_pressure":3.4}}
             """.formatted(payloadVin);
         return MqttMessage.of(
-            "fleetiq/" + topicVin + "/telemetry",
+            "fleetiq/tenant-a/" + topicVin + "/telemetry",
             json.getBytes(StandardCharsets.UTF_8),
             MqttQoS.AT_LEAST_ONCE
         );
@@ -53,20 +54,23 @@ class MqttTelemetryMappingTest {
 
     private static final class CapturingUseCase implements IngestTelemetryUseCase {
         private TelemetrySample sample;
+        private String tenantId;
 
         @Override
-        public Uni<IngestResult> ingest(TelemetrySample sample) {
+        public Uni<IngestResult> ingest(String tenantId, TelemetrySample sample) {
+            this.tenantId = tenantId;
             this.sample = sample;
             return Uni.createFrom().item(new IngestResult(true, "Telemetry accepted"));
         }
 
         @Override
-        public Uni<List<TelemetrySample>> getTelemetryRange(String vin, Instant from, Instant to) {
+        public Uni<List<TelemetrySample>> getTelemetryRange(
+            String tenantId, String vin, Instant from, Instant to) {
             return Uni.createFrom().item(List.of());
         }
 
         @Override
-        public Uni<Double> getAverageSpeed(String vin, Instant from, Instant to) {
+        public Uni<Double> getAverageSpeed(String tenantId, String vin, Instant from, Instant to) {
             return Uni.createFrom().item(0.0);
         }
     }

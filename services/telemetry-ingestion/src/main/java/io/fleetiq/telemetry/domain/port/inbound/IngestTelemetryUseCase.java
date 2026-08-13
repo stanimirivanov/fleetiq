@@ -15,9 +15,9 @@ public interface IngestTelemetryUseCase {
     record IngestResult(boolean accepted, String message) {}
 
     /** Persists a sample and reports domain acceptance without blocking the caller. */
-    Uni<IngestResult> ingest(TelemetrySample sample);
+    Uni<IngestResult> ingest(String tenantId, TelemetrySample sample);
 
-    Uni<List<TelemetrySample>> getTelemetryRange(String vin, Instant from, Instant to);
+    Uni<List<TelemetrySample>> getTelemetryRange(String tenantId, String vin, Instant from, Instant to);
 
-    Uni<Double> getAverageSpeed(String vin, Instant from, Instant to);
+    Uni<Double> getAverageSpeed(String tenantId, String vin, Instant from, Instant to);
 }

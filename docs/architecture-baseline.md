@@ -49,7 +49,10 @@ No adapter may silently substitute a default tenant. MQTT must first gain an aut
 
 - Device Registry scopes gRPC commands, repository queries, database uniqueness, and
   projection events by authenticated tenant.
-- Telemetry, topology, maintenance, streaming, and actor state still require the same
+- Telemetry Ingestion scopes gRPC and MQTT commands, TimescaleDB rows and aggregates,
+  repository queries, and position projection events by tenant. MQTT broker ACLs must
+  still bind authenticated publishers to their tenant-qualified topic prefix.
+- Topology, maintenance, streaming, and actor state still require the same
   explicit tenant migration before multi-tenant production use.
 
 ## API compatibility

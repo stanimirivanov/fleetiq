@@ -7,6 +7,7 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.nio.charset.StandardCharsets;
 
@@ -18,8 +19,11 @@ public class MqttClientManager {
     @Channel("telemetry-out")
     Emitter<byte[]> emitter;
 
+    @ConfigProperty(name = "fleetiq.simulator.tenant-id", defaultValue = "demo")
+    String tenantId;
+
     public void publishTelemetry(String vin, String jsonPayload) {
-        String topic = "fleetiq/" + vin + "/telemetry";
+        String topic = "fleetiq/" + tenantId + "/" + vin + "/telemetry";
         emitter.send(MqttMessage.of(
             topic,
             jsonPayload.getBytes(StandardCharsets.UTF_8),

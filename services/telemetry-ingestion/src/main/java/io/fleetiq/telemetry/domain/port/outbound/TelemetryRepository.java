@@ -12,9 +12,9 @@ import java.util.List;
  */
 public interface TelemetryRepository {
 
-    Uni<Void> save(TelemetrySample sample);
+    Uni<Void> save(String tenantId, TelemetrySample sample);
 
-    Uni<List<TelemetrySample>> findByVinAndTimeRange(String vin, Instant from, Instant to);
+    Uni<List<TelemetrySample>> findByVinAndTimeRange(String tenantId, String vin, Instant from, Instant to);
 
-    Uni<Double> getAverageSpeed(String vin, Instant from, Instant to);
+    Uni<Double> getAverageSpeed(String tenantId, String vin, Instant from, Instant to);
 }

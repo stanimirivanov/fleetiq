@@ -1,7 +1,7 @@
 # Vehicle Simulator
 
 The simulator produces representative vehicle telemetry for local demonstrations
-and end-to-end testing. It publishes MQTT messages using the same topic and payload
+and end-to-end testing. It publishes tenant-qualified MQTT messages using the same topic and payload
 contract consumed by `telemetry-ingestion`.
 
 ## Boundaries
@@ -12,6 +12,8 @@ contract consumed by `telemetry-ingestion`.
 
 The simulator is a test and demonstration client, not a source of production domain
 logic. Contract changes must remain aligned with the ingestion adapter.
+
+Set `FLEETIQ_TENANT_ID` to choose the simulated tenant; it defaults to `demo`.
 
 ## Verify
 

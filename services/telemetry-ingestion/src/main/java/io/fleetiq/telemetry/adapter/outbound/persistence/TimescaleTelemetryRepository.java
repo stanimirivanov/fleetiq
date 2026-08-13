@@ -31,16 +31,16 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
     private static final TypeReference<Map<String, Double>> DOUBLE_MAP_TYPE = new TypeReference<>() {};
 
     private static final String INSERT_SQL = """
-        INSERT INTO telemetry_samples (time, vin, latitude, longitude, altitude,
+        INSERT INTO telemetry_samples (time, tenant_id, vin, latitude, longitude, altitude,
             speed_kmh, fuel_level_pct, engine_temp_celsius, battery_voltage, custom_metrics)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
         """;
 
     private static final String SELECT_RANGE_SQL = """
         SELECT time, vin, latitude, longitude, altitude,
             speed_kmh, fuel_level_pct, engine_temp_celsius, battery_voltage, custom_metrics
         FROM telemetry_samples
-        WHERE vin = $1 AND time >= $2 AND time <= $3
+        WHERE tenant_id = $1 AND vin = $2 AND time >= $3 AND time <= $4
         ORDER BY time DESC
         LIMIT 1000
         """;
@@ -53,14 +53,15 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
     private static final String AVERAGE_SPEED_SQL = """
         SELECT AVG(speed_kmh) as avg_speed
         FROM telemetry_samples
-        WHERE vin = $1 AND time >= $2 AND time <= $3
+        WHERE tenant_id = $1 AND vin = $2 AND time >= $3 AND time <= $4
         """;
 
     @Override
-    public Uni<Void> save(TelemetrySample sample) {
+    public Uni<Void> save(String tenantId, TelemetrySample sample) {
         Tuple tuple = Tuple.tuple()
             // ✅ Preserve UTC offset using OffsetDateTime for TIMESTAMPTZ
             .addOffsetDateTime(OffsetDateTime.ofInstant(sample.timestamp(), ZoneOffset.UTC))
+            .addString(tenantId)
             .addString(sample.vin())
             .addDouble(sample.latitude())
             .addDouble(sample.longitude())
@@ -77,6 +78,7 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
             .setLongitude(sample.longitude())
             .setAltitude(sample.altitude())
             .setObservedAtEpochMillis(sample.timestamp().toEpochMilli())
+            .setTenantId(tenantId)
             .build().toByteArray();
 
         return pgPool.withTransaction(connection -> connection.preparedQuery(INSERT_SQL)
@@ -87,8 +89,9 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
     }
 
     @Override
-    public Uni<List<TelemetrySample>> findByVinAndTimeRange(String vin, Instant from, Instant to) {
+    public Uni<List<TelemetrySample>> findByVinAndTimeRange(String tenantId, String vin, Instant from, Instant to) {
         Tuple tuple = Tuple.tuple()
+            .addString(tenantId)
             .addString(vin)
             .addOffsetDateTime(OffsetDateTime.ofInstant(from, ZoneOffset.UTC))
             .addOffsetDateTime(OffsetDateTime.ofInstant(to, ZoneOffset.UTC));
@@ -99,8 +102,9 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
     }
 
     @Override
-    public Uni<Double> getAverageSpeed(String vin, Instant from, Instant to) {
+    public Uni<Double> getAverageSpeed(String tenantId, String vin, Instant from, Instant to) {
         Tuple tuple = Tuple.tuple()
+            .addString(tenantId)
             .addString(vin)
             .addOffsetDateTime(OffsetDateTime.ofInstant(from, ZoneOffset.UTC))
             .addOffsetDateTime(OffsetDateTime.ofInstant(to, ZoneOffset.UTC));
