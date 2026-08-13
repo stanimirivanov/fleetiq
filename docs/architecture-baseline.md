@@ -67,3 +67,10 @@ idempotent and reject stale updates using their event timestamps. Fleet
 Topology applies this rule through timestamp-guarded relational projection
 upserts; only accepted updates are synchronized to the corresponding Apache AGE
 vertex in the same database transaction.
+
+Relationship identity and traversal metadata are retained in a relational
+projection with a matching AGE `connected_to` edge. Bounded traversal uses the
+indexed relationship projection to keep API queries parameterized and
+predictable; arbitrary edge properties remain JSONB. Proximity searches use the
+latest accepted coordinates and return vehicles ordered by great-circle
+distance.
