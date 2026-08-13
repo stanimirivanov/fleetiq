@@ -63,4 +63,7 @@ Projection events are additive protobuf contracts. Device Registry and Telemetry
 Ingestion persist projection events transactionally with their source changes;
 scheduled relays publish pending records to MQTT and remove them only after an
 acknowledged send. Delivery is therefore at least once. Consumers must be
-idempotent and reject stale updates using their event timestamps.
+idempotent and reject stale updates using their event timestamps. Fleet
+Topology applies this rule through timestamp-guarded relational projection
+upserts; only accepted updates are synchronized to the corresponding Apache AGE
+vertex in the same database transaction.
