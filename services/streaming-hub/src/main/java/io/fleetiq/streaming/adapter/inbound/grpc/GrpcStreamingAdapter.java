@@ -6,6 +6,7 @@ import io.fleetiq.proto.streaming.v1.WatchFleetRequest;
 import io.fleetiq.proto.streaming.v1.WatchVehicleRequest;
 import io.fleetiq.streaming.domain.port.inbound.StreamingUseCase;
 import io.fleetiq.security.TenantSecured;
+import io.fleetiq.security.CurrentTenant;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,12 @@ public class GrpcStreamingAdapter extends MutinyFleetStreamingGrpc.FleetStreamin
 
     private final StreamingUseCase useCase;
     private final GrpcPositionMapper mapper;
+    private final CurrentTenant currentTenant;
 
     @Override
     public Multi<PositionUpdate> watchFleet(WatchFleetRequest request) {
         return useCase.watchFleet(
+                currentTenant.get().tenantId(),
                 Set.copyOf(request.getVinsList()), interval(request.getMinUpdateIntervalSeconds()))
             .map(mapper::toProto);
     }
@@ -33,6 +36,7 @@ public class GrpcStreamingAdapter extends MutinyFleetStreamingGrpc.FleetStreamin
     @Override
     public Multi<PositionUpdate> watchVehicle(WatchVehicleRequest request) {
         return useCase.watchVehicle(
+                currentTenant.get().tenantId(),
                 request.getVin(), interval(request.getMinUpdateIntervalSeconds()))
             .map(mapper::toProto);
     }

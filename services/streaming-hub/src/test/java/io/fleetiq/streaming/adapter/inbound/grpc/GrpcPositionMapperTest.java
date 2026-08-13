@@ -13,7 +13,7 @@ class GrpcPositionMapperTest {
     @Test
     void mapsDomainEventToGrpcUpdate() {
         var event = new PositionEvent(
-            "1HGCM82633A004352", Instant.parse("2026-08-12T12:00:00Z"),
+            "tenant-a", "1HGCM82633A004352", Instant.parse("2026-08-12T12:00:00Z"),
             52.52, 13.405, 34, 72.5, "MOVING");
 
         var update = new GrpcPositionMapper().toProto(event);

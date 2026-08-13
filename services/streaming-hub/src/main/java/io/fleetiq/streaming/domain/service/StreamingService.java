@@ -18,20 +18,27 @@ public class StreamingService implements StreamingUseCase {
     private final PositionEventSource eventSource;
 
     @Override
-    public Multi<PositionEvent> watchFleet(Set<String> vins, Duration minimumInterval) {
+    public Multi<PositionEvent> watchFleet(String tenantId, Set<String> vins, Duration minimumInterval) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return Multi.createFrom().failure(new IllegalArgumentException("Tenant ID is required"));
+        }
         Set<String> selectedVins = vins == null ? Set.of() : Set.copyOf(vins);
         Multi<PositionEvent> stream = eventSource.positions()
-            .select().where(event -> selectedVins.isEmpty() || selectedVins.contains(event.vin()));
+            .select().where(event -> tenantId.equals(event.tenantId())
+                && (selectedVins.isEmpty() || selectedVins.contains(event.vin())));
         return throttle(stream, minimumInterval);
     }
 
     @Override
-    public Multi<PositionEvent> watchVehicle(String vin, Duration minimumInterval) {
+    public Multi<PositionEvent> watchVehicle(String tenantId, String vin, Duration minimumInterval) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return Multi.createFrom().failure(new IllegalArgumentException("Tenant ID is required"));
+        }
         if (vin == null || vin.isBlank()) {
             return Multi.createFrom().failure(new IllegalArgumentException("VIN is required"));
         }
         Multi<PositionEvent> stream = eventSource.positions()
-            .select().where(event -> vin.equals(event.vin()));
+            .select().where(event -> tenantId.equals(event.tenantId()) && vin.equals(event.vin()));
         return throttle(stream, minimumInterval);
     }
 

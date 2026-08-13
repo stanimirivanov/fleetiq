@@ -57,7 +57,9 @@ No adapter may silently substitute a default tenant. MQTT must first gain an aut
 - Maintenance Predictor scopes evidence, predictions, embeddings, repository queries,
   and authenticated gRPC operations by tenant. Future scheduled work must enumerate
   tenant work explicitly rather than inventing a request tenant.
-- Streaming and actor state still require the same
+- Streaming Hub extracts tenant identity from tenant-qualified MQTT topics and filters
+  every authenticated gRPC stream by tenant before VIN selection.
+- Actor state still requires the same
   explicit tenant migration before multi-tenant production use.
 
 ## API compatibility
