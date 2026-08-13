@@ -10,6 +10,7 @@ import io.fleetiq.proto.device.v1.RegisterDeviceResponse;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusRequest;
 import io.fleetiq.proto.device.v1.UpdateDeviceStatusResponse;
 import io.fleetiq.security.TenantSecured;
+import io.fleetiq.security.CurrentTenant;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
@@ -28,10 +29,11 @@ public class DeviceRegistryGrpcAdapter extends MutinyDeviceRegistryGrpc.DeviceRe
 
     private final DeviceRegistryUseCase useCase;
     private final GrpcDeviceMapper mapper;
+    private final CurrentTenant currentTenant;
 
     @Override
     public Uni<RegisterDeviceResponse> registerDevice(RegisterDeviceRequest request) {
-        return Uni.createFrom().item(() -> mapper.toCommand(request))
+        return Uni.createFrom().item(() -> mapper.toCommand(currentTenant.get().tenantId(), request))
             .onItem().transformToUni(useCase::register)
             .onItem().transformToUni(result -> switch (result) {
                 case DeviceRegistryUseCase.RegisterResult.Registered registered ->
@@ -49,7 +51,7 @@ public class DeviceRegistryGrpcAdapter extends MutinyDeviceRegistryGrpc.DeviceRe
     @Override
     public Uni<GetDeviceResponse> getDevice(GetDeviceRequest request) {
         return Uni.createFrom().item(request::getVin)
-            .onItem().transformToUni(useCase::getByVin)
+            .onItem().transformToUni(vin -> useCase.getByVin(currentTenant.get().tenantId(), vin))
             .onItem().transformToUni(device -> device
                 .map(value -> Uni.createFrom().item(mapper.toGetResponse(value)))
                 .orElseGet(() -> Uni.createFrom().failure(Status.NOT_FOUND
@@ -62,7 +64,7 @@ public class DeviceRegistryGrpcAdapter extends MutinyDeviceRegistryGrpc.DeviceRe
 
     @Override
     public Uni<UpdateDeviceStatusResponse> updateDeviceStatus(UpdateDeviceStatusRequest request) {
-        return Uni.createFrom().item(() -> mapper.toCommand(request))
+        return Uni.createFrom().item(() -> mapper.toCommand(currentTenant.get().tenantId(), request))
             .onItem().transformToUni(useCase::updateStatus)
             .onItem().transformToUni(result -> switch (result) {
                 case DeviceRegistryUseCase.UpdateStatusResult.Updated updated ->

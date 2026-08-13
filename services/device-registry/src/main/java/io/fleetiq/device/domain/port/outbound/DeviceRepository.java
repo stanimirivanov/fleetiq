@@ -11,7 +11,7 @@ import java.util.Optional;
  * transaction details and reports expected absence with {@link Optional}.
  */
 public interface DeviceRepository {
-    Uni<Optional<Device>> findByVin(String vin);
-    Uni<Device> save(Device device);
-    Uni<Optional<Device>> updateStatus(String vin, DeviceStatus status);
+    Uni<Optional<Device>> findByVin(String tenantId, String vin);
+    Uni<Device> save(String tenantId, Device device);
+    Uni<Optional<Device>> updateStatus(String tenantId, String vin, DeviceStatus status);
 }

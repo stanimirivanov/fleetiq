@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DeviceRegistryServiceTest {
 
+    private static final String TENANT = "tenant-a";
     private static final String VIN = "1HGCM82633A004352";
     private final StubRepository repository = new StubRepository();
     private final DeviceRegistryService service = new DeviceRegistryService(
@@ -51,7 +52,7 @@ class DeviceRegistryServiceTest {
         assertThrows(DeviceValidationException.class,
             () -> service.register(command("invalid")).await().indefinitely());
         var future = new DeviceRegistryUseCase.RegisterCommand(
-            VIN, "OBD", "FleetIQ", "Edge", 2028, Map.of());
+            TENANT, VIN, "OBD", "FleetIQ", "Edge", 2028, Map.of());
         assertThrows(DeviceValidationException.class,
             () -> service.register(future).await().indefinitely());
     }
@@ -59,7 +60,7 @@ class DeviceRegistryServiceTest {
     @Test
     void reportsMissingStatusUpdateAsExpectedOutcome() {
         var result = service.updateStatus(
-            new DeviceRegistryUseCase.UpdateStatusCommand(VIN, DeviceStatus.MAINTENANCE)
+            new DeviceRegistryUseCase.UpdateStatusCommand(TENANT, VIN, DeviceStatus.MAINTENANCE)
         ).await().indefinitely();
 
         assertInstanceOf(DeviceRegistryUseCase.UpdateStatusResult.NotFound.class, result);
@@ -67,7 +68,7 @@ class DeviceRegistryServiceTest {
 
     private static DeviceRegistryUseCase.RegisterCommand command(String vin) {
         return new DeviceRegistryUseCase.RegisterCommand(
-            vin, "OBD", "FleetIQ", "Edge", 2025, Map.of("gps", "enabled"));
+            TENANT, vin, "OBD", "FleetIQ", "Edge", 2025, Map.of("gps", "enabled"));
     }
 
     private static Device device(String vin) {
@@ -78,18 +79,18 @@ class DeviceRegistryServiceTest {
         private Optional<Device> device = Optional.empty();
 
         @Override
-        public Uni<Optional<Device>> findByVin(String vin) {
+        public Uni<Optional<Device>> findByVin(String tenantId, String vin) {
             return Uni.createFrom().item(device);
         }
 
         @Override
-        public Uni<Device> save(Device device) {
+        public Uni<Device> save(String tenantId, Device device) {
             this.device = Optional.of(device);
             return Uni.createFrom().item(device);
         }
 
         @Override
-        public Uni<Optional<Device>> updateStatus(String vin, DeviceStatus status) {
+        public Uni<Optional<Device>> updateStatus(String tenantId, String vin, DeviceStatus status) {
             return Uni.createFrom().item(device.map(value -> new Device(
                 value.vin(), value.deviceType(), value.manufacturer(), value.model(), value.year(),
                 value.capabilities(), status, value.registeredAt(), value.updatedAt())));

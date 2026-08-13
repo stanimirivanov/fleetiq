@@ -10,6 +10,7 @@ events consumed by Fleet Topology.
   at least once.
 - Verify: `mvn -pl services/device-registry -am verify`.
 
-Tenant identity is established at the API boundary, but tenant-scoped keys and rows
-are still an explicit prerequisite for production multi-tenancy. See
+Device keys and repository queries are tenant-scoped, and projection events carry the
+originating tenant. Production multi-tenancy still requires downstream projections
+and MQTT device identity to enforce the same boundary. See
 [`../../docs/architecture-baseline.md`](../../docs/architecture-baseline.md).

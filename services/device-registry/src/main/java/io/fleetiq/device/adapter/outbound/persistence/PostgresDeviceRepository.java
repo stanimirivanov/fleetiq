@@ -20,16 +20,17 @@ public class PostgresDeviceRepository implements DeviceRepository {
     private final DeviceMapper mapper;
 
     @Override
-    public Uni<Optional<Device>> findByVin(String vin) {
+    public Uni<Optional<Device>> findByVin(String tenantId, String vin) {
         return Panache.withSession(() ->
-            DeviceEntity.<DeviceEntity>findById(vin)
+            DeviceEntity.<DeviceEntity>find("tenantId = ?1 and vin = ?2", tenantId, vin).firstResult()
                 .map(entity -> Optional.ofNullable(entity).map(mapper::toDomain))
         );
     }
 
     @Override
-    public Uni<Device> save(Device device) {
+    public Uni<Device> save(String tenantId, Device device) {
         DeviceEntity entity = mapper.toEntity(device);
+        entity.tenantId = tenantId;
 
         return Panache.withTransaction(() -> entity.persistAndFlush()
                 .call(() -> persistOutbox(entity)))
@@ -38,9 +39,9 @@ public class PostgresDeviceRepository implements DeviceRepository {
     }
 
     @Override
-    public Uni<Optional<Device>> updateStatus(String vin, DeviceStatus status) {
+    public Uni<Optional<Device>> updateStatus(String tenantId, String vin, DeviceStatus status) {
         return Panache.withTransaction(() ->
-                DeviceEntity.<DeviceEntity>findById(vin)
+                DeviceEntity.<DeviceEntity>find("tenantId = ?1 and vin = ?2", tenantId, vin).firstResult()
                     .onItem().ifNotNull().invoke(entity -> {
                         entity.status = status.name();
                     })
@@ -60,6 +61,7 @@ public class PostgresDeviceRepository implements DeviceRepository {
             .setDeviceType(entity.deviceType)
             .setStatus(entity.status)
             .setOccurredAtEpochMillis(occurredAt.toEpochMilli())
+            .setTenantId(entity.tenantId)
             .build().toByteArray();
         outbox.createdAt = occurredAt;
         return outbox.persist();

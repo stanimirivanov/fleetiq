@@ -10,6 +10,7 @@ message DeviceProjectionEvent {
   string device_type = 2;
   string status = 3;
   int64 occurred_at_epoch_millis = 4;
+  string tenant_id = 5;
 }
 
 message PositionProjectionEvent {

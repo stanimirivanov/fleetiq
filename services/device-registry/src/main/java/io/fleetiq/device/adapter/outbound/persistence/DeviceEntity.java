@@ -4,6 +4,7 @@ import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -13,13 +14,20 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "devices")
 public class DeviceEntity extends PanacheEntityBase {
 
     @Id
-    @Column(name = "vin", length = 17)
+    @GeneratedValue
+    public UUID id;
+
+    @Column(name = "tenant_id", nullable = false, length = 100)
+    public String tenantId;
+
+    @Column(name = "vin", nullable = false, length = 17)
     public String vin;
 
     @Column(name = "device_type", nullable = false, length = 50)

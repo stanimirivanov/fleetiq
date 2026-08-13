@@ -34,6 +34,6 @@ class GrpcDeviceMapperTest {
             .setVin("1HGCM82633A004352")
             .build();
 
-        assertThrows(DeviceValidationException.class, () -> mapper.toCommand(request));
+        assertThrows(DeviceValidationException.class, () -> mapper.toCommand("tenant-a", request));
     }
 }
