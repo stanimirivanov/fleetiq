@@ -15,13 +15,15 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 public class TenantSecurityInterceptor {
 
     @Inject SecurityIdentity securityIdentity;
-    @Inject JsonWebToken jwt;
     @Inject CurrentTenant currentTenant;
 
     @AroundInvoke
     Object establishTenant(InvocationContext context) throws Exception {
         if (securityIdentity.isAnonymous()) {
             throw new UnauthorizedException("Authentication is required");
+        }
+        if (!(securityIdentity.getPrincipal() instanceof JsonWebToken jwt)) {
+            throw new UnauthorizedException("A JWT identity is required");
         }
         String tenantId = jwt.getClaim("tenant_id");
         currentTenant.set(TenantIdentity.of(
