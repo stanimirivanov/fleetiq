@@ -11,7 +11,6 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
-@Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
 public class TimescaleTelemetryRepository implements TelemetryRepository {
@@ -68,8 +66,6 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
 
         return pgPool.preparedQuery(INSERT_SQL)
             .execute(tuple)
-            .onItem().invoke(rows -> log.debug("Telemetry saved for VIN: {}", sample.vin()))
-            .onFailure().invoke(e -> log.error("Failed to persist telemetry for VIN: {}", sample.vin(), e))
             .replaceWithVoid();
     }
 
@@ -82,8 +78,7 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
 
         return pgPool.preparedQuery(SELECT_RANGE_SQL)
             .execute(tuple)
-            .map(this::mapRowsToSamples)
-            .onFailure().invoke(e -> log.error("Failed to query telemetry for VIN: {}", vin, e));
+            .map(this::mapRowsToSamples);
     }
 
     @Override
@@ -100,8 +95,7 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
                 Row row = rows.iterator().next();
                 Double avg = row.getDouble("avg_speed");
                 return avg != null ? avg : 0.0;
-            })
-            .onFailure().invoke(e -> log.error("Failed to query average speed for VIN: {}", vin, e));
+            });
     }
 
     private List<TelemetrySample> mapRowsToSamples(RowSet<Row> rows) {
@@ -126,8 +120,7 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
         try {
             return objectMapper.writeValueAsString(map);
         } catch (Exception e) {
-            log.warn("Failed to serialize custom metrics", e);
-            return "{}";
+            throw new IllegalArgumentException("Custom metrics cannot be serialized", e);
         }
     }
 
@@ -137,8 +130,7 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
             // ✅ TypeReference guarantees Double parsing
             return objectMapper.readValue(json, DOUBLE_MAP_TYPE);
         } catch (Exception e) {
-            log.warn("Failed to parse custom metrics JSON: {}", json, e);
-            return Map.of();
+            throw new IllegalStateException("Stored custom metrics are invalid JSON", e);
         }
     }
 }
