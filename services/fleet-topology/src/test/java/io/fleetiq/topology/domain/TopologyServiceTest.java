@@ -34,6 +34,17 @@ class TopologyServiceTest {
         private TopologyEdge edge;
 
         @Override
+        public Uni<Void> upsertVehicle(io.fleetiq.topology.domain.model.VehicleProjection vehicle) {
+            return Uni.createFrom().voidItem();
+        }
+
+        @Override
+        public Uni<Void> updatePosition(String vin, double latitude, double longitude, double altitude,
+                                        java.time.Instant observedAt) {
+            return Uni.createFrom().voidItem();
+        }
+
+        @Override
         public Uni<Void> createRelationship(TopologyEdge edge) {
             return Uni.createFrom().item(() -> {
                 this.edge = edge;

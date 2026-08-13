@@ -51,3 +51,15 @@ No adapter may silently substitute a default tenant. MQTT must first gain an aut
 - Existing enum numeric values are never renumbered.
 - RPC request/response types are not changed incompatibly; introduce a new RPC or versioned package instead.
 - Transport DTOs never become domain models.
+
+## Topology projection
+
+Fleet Topology owns a local, eventually consistent Apache AGE read model. Device
+Registry publishes device registration and status changes; Telemetry Ingestion
+publishes normalized position changes. Fleet Topology consumes those contracts
+and never performs synchronous query-time fan-out to the source services.
+
+Projection events are additive protobuf contracts. Consumers must be idempotent
+and reject stale updates using their event timestamps. Durable publication must
+use a transactional outbox before this path is considered production-ready;
+direct MQTT publication is only the current transport foundation.

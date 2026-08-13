@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package fleetiq.events.v1;
+
+option java_package = "io.fleetiq.proto.events.v1";
+option java_multiple_files = true;
+
+message DeviceProjectionEvent {
+  string vin = 1;
+  string device_type = 2;
+  string status = 3;
+  int64 occurred_at_epoch_millis = 4;
+}
+
+message PositionProjectionEvent {
+  string vin = 1;
+  double latitude = 2;
+  double longitude = 3;
+  double altitude = 4;
+  int64 observed_at_epoch_millis = 5;
+}

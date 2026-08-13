@@ -2,6 +2,7 @@ package io.fleetiq.topology.adapter.outbound.persistence;
 
 import io.fleetiq.topology.domain.model.TopologyEdge;
 import io.fleetiq.topology.domain.model.TopologyNode;
+import io.fleetiq.topology.domain.model.VehicleProjection;
 import io.fleetiq.topology.domain.port.outbound.TopologyRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,6 +11,17 @@ import java.util.List;
 
 @ApplicationScoped
 public class AgeTopologyRepository implements TopologyRepository {
+
+    @Override
+    public Uni<Void> upsertVehicle(VehicleProjection vehicle) {
+        return Uni.createFrom().voidItem();
+    }
+
+    @Override
+    public Uni<Void> updatePosition(String vin, double latitude, double longitude, double altitude,
+                                    java.time.Instant observedAt) {
+        return Uni.createFrom().voidItem();
+    }
 
     @Override
     public Uni<Void> createRelationship(TopologyEdge edge) {

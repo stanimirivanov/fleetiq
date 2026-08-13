@@ -32,7 +32,10 @@ public class MqttTestResource implements QuarkusTestResourceLifecycleManager {
             "mp.messaging.incoming.telemetry-in.enabled", "true",
             "mp.messaging.incoming.telemetry-in.host", host,
             "mp.messaging.incoming.telemetry-in.port", port.toString(),
-            "mp.messaging.incoming.telemetry-in.client-id", "telemetry-ingestion-test"
+            "mp.messaging.incoming.telemetry-in.client-id", "telemetry-ingestion-test",
+            "mp.messaging.outgoing.position-projections-out.enabled", "true",
+            "mp.messaging.outgoing.position-projections-out.host", host,
+            "mp.messaging.outgoing.position-projections-out.port", port.toString()
         );
     }
 

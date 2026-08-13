@@ -10,6 +10,7 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Descriptors.ServiceDescriptor;
 import io.fleetiq.proto.common.v1.Types;
 import io.fleetiq.proto.device.v1.Registry;
+import io.fleetiq.proto.events.v1.TopologyProjection;
 import io.fleetiq.proto.maintenance.v1.Predictor;
 import io.fleetiq.proto.streaming.v1.FleetStreamingOuterClass;
 import io.fleetiq.proto.telemetry.v1.Ingestion;
@@ -36,6 +37,7 @@ class ProtoCompatibilityTest {
         DescriptorIndex current = DescriptorIndex.from(List.of(
             Types.getDescriptor(),
             Registry.getDescriptor(),
+            TopologyProjection.getDescriptor(),
             Predictor.getDescriptor(),
             FleetStreamingOuterClass.getDescriptor(),
             Ingestion.getDescriptor(),
