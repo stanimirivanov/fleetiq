@@ -5,6 +5,7 @@ A portfolio project demonstrating modern backend architecture patterns using **Q
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [Implementation roadmap](docs/implementation-roadmap.md)
 - [Architecture baseline](docs/architecture-baseline.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Deployment ownership](docs/deployment-ownership.md)
