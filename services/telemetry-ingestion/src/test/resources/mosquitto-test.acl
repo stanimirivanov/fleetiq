@@ -10,3 +10,4 @@ topic read fleetiq/events/device-projections
 topic read fleetiq/events/position-projections
 
 pattern write fleetiq/%u/+/telemetry
+pattern write fleetiq/%u/telemetry

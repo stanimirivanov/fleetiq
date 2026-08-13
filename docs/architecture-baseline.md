@@ -43,15 +43,19 @@ The migration must be performed as one compatibility change per service:
 5. Prove cross-tenant denial with repository and API integration tests.
 6. Optionally add PostgreSQL row-level security as defense in depth.
 
-No adapter may silently substitute a default tenant. MQTT must first gain an authenticated device-to-tenant mapping; until then, multi-tenant mode is not production-ready.
+No adapter may silently substitute a default tenant. MQTT device principals use
+`<tenant>/<vin>` and broker ACL expansion binds them to exactly
+`fleetiq/<tenant>/<vin>/telemetry`. The tenant-wide multi-vehicle simulator
+principal is development-only and must not be provisioned in production.
 
 ### Rollout status
 
 - Device Registry scopes gRPC commands, repository queries, database uniqueness, and
   projection events by authenticated tenant.
 - Telemetry Ingestion scopes gRPC and MQTT commands, TimescaleDB rows and aggregates,
-  repository queries, and position projection events by tenant. MQTT broker ACLs must
-  still bind authenticated publishers to their tenant-qualified topic prefix.
+  repository queries, and position projection events by tenant. MQTT broker ACLs bind
+  device principals to their exact tenant-and-VIN topic and service principals to
+  least-privilege event topics.
 - Fleet Topology scopes consumed projections, relational and AGE graph identity,
   relationships, traversal, proximity queries, and authenticated gRPC calls by tenant.
 - Maintenance Predictor scopes evidence, predictions, embeddings, repository queries,

@@ -99,6 +99,27 @@ class MqttTelemetryAdapterTest {
     }
 
     @Test
+    void bindsDeviceIdentityToItsExactTenantAndVinTopic() throws Exception {
+        String ownVin = "SIM-VIN-001";
+        String otherVin = "SIM-VIN-002";
+
+        try (MqttClient client = new MqttClient(brokerUri(), MqttClient.generateClientId())) {
+            client.connect(authenticatedOptions("demo/SIM-VIN-001", "device-001-test"));
+            client.publish("fleetiq/demo/" + ownVin + "/telemetry", telemetryMessage(ownVin));
+            try {
+                client.publish("fleetiq/demo/" + otherVin + "/telemetry", telemetryMessage(otherVin));
+            } catch (MqttException ignored) {
+                // MQTT 3 brokers may report an ACL denial by closing the connection.
+            }
+            disconnectIfConnected(client);
+        }
+
+        awaitPersisted(ownVin, Duration.ofSeconds(10));
+        Thread.sleep(500);
+        assertEquals(0, countSamples(otherVin), "A device identity must not publish for another VIN");
+    }
+
+    @Test
     void restrictsBackendIdentityToItsProjectionTopic() throws Exception {
         var receivedTopics = new LinkedBlockingQueue<String>();
 
@@ -176,7 +197,7 @@ class MqttTelemetryAdapterTest {
     private void awaitPersisted(String vin, Duration timeout) throws Exception {
         Instant deadline = Instant.now().plus(timeout);
         while (Instant.now().isBefore(deadline)) {
-            if (countSamples(vin) == 1) {
+            if (countSamples(vin) >= 1) {
                 return;
             }
             Thread.sleep(100);
