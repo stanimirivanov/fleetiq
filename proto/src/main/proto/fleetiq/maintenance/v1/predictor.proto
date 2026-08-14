@@ -27,6 +27,7 @@ message PredictMaintenanceResponse {
     string recommendation = 6;
     repeated string evidence_ids = 7;
     fleetiq.common.v1.Timestamp generated_at = 8;
+    string severity = 9;
 }
 
 message GetPredictionHistoryRequest {

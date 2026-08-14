@@ -10,6 +10,13 @@ import java.time.Instant;
 @ApplicationScoped
 public class TelemetryGrpcMapper {
 
+    public Instant mapTimestampToInstant(Timestamp timestamp) {
+        if (timestamp == null || timestamp.getEpochMillis() == 0) {
+            return null;
+        }
+        return Instant.ofEpochMilli(timestamp.getEpochMillis());
+    }
+
     /**
      * Maps incoming Protobuf message to Domain Model.
      */

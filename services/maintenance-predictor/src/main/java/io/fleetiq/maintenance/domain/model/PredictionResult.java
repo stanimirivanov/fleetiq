@@ -8,6 +8,7 @@ public record PredictionResult(
     String vin,
     double failureProbability,
     String predictedComponent,
+    Severity severity,
     int estimatedDaysUntilFailure,
     String recommendation,
     List<String> evidenceIds

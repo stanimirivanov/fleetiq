@@ -4,13 +4,16 @@ import io.fleetiq.maintenance.domain.model.MaintenanceRecord;
 import io.fleetiq.maintenance.domain.model.PredictionResult;
 import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase;
 import io.fleetiq.maintenance.domain.port.outbound.MaintenanceRepository;
+import io.fleetiq.maintenance.domain.port.outbound.PredictionEngine;
+import io.fleetiq.maintenance.domain.port.outbound.TelemetryWindowSource;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.UUID;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Slf4j
 @ApplicationScoped
@@ -18,23 +21,27 @@ import java.util.UUID;
 public class PredictorService implements PredictMaintenanceUseCase {
 
     private final MaintenanceRepository repository;
+    private final TelemetryWindowSource telemetryWindowSource;
+    private final TelemetryAnomalyDetector anomalyDetector;
+    private final PredictionEngine predictionEngine;
 
     @Override
     public Uni<PredictionResult> predict(String tenantId, String vin, int lookbackDays) {
         validateTenant(tenantId);
+        if (vin == null || vin.isBlank()) {
+            throw new IllegalArgumentException("VIN is required");
+        }
+        if (lookbackDays < 1 || lookbackDays > 365) {
+            throw new IllegalArgumentException("Lookback days must be between 1 and 365");
+        }
         log.info("Predicting maintenance for VIN: {}, lookback: {} days", vin, lookbackDays);
-        // AI integration in Phase 4 — placeholder for now
-        return Uni.createFrom().item(() ->
-            new PredictionResult(
-                UUID.randomUUID(),
-                vin,
-                0.0,
-                "unknown",
-                999,
-                "AI prediction not yet implemented",
-                List.of()
-            )
-        );
+        Instant to = Instant.now();
+        Instant from = to.minus(lookbackDays, ChronoUnit.DAYS);
+
+        return telemetryWindowSource.load(tenantId, vin, from, to)
+            .map(anomalyDetector::assess)
+            .flatMap(assessment -> predictionEngine.generate(tenantId, vin, assessment))
+            .flatMap(prediction -> repository.savePrediction(tenantId, prediction));
     }
 
     @Override
