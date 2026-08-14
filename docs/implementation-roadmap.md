@@ -54,6 +54,8 @@ synchronous query-time fan-out.
 - [x] AGE vertices, relationships, traversal, and proximity queries are implemented.
 - [ ] A black-box test proves simulator → broker → ingestion → database → topology.
 - [ ] Poison events have bounded retries and a quarantine path.
+- [ ] Historical telemetry supports distance and time-bucket aggregations required by analytics.
+- [ ] Advanced topology proves downstream impact analysis and route-deviation detection.
 
 ### Tasks
 
@@ -63,6 +65,9 @@ synchronous query-time fan-out.
 - [ ] Standardize event IDs, correlation IDs, and schema-version metadata.
 - [ ] Add retry/backoff and dead-letter handling.
 - [ ] Add the cross-service black-box test.
+- [ ] Add TimescaleDB aggregate queries for total distance and time buckets.
+- [ ] Add topology impact-analysis and route-deviation use cases with tests.
+- [ ] Add a 1,000-vehicle/1 Hz load scenario and record the baseline.
 
 ## Phase 3 — Hexagonal architecture and domain contracts
 
@@ -145,12 +150,52 @@ apply least privilege and isolate credential lifecycle from ordinary device meta
 - [ ] Configure TLS, trust, renewal, and expiry monitoring.
 - [ ] Add RLS policies and cross-tenant SQL denial tests.
 
-## Phase 6 — Pekko stateful processing
+## Phase 6 — Predictive maintenance with AI
+
+### Goals
+
+Build an evidence-based maintenance workflow: derive statistical anomalies from
+telemetry windows, retrieve similar incidents through pgvector, and use a local
+LangChain4j model to produce structured recommendations with cited evidence.
+AI output is advisory, tenant-scoped, reproducible, and never silently substituted
+for deterministic safety decisions.
+
+### Acceptance criteria
+
+- [x] Maintenance evidence and predictions have tenant-scoped JSONB persistence.
+- [x] Flyway creates and verifies tenant-scoped pgvector embedding storage.
+- [x] Authenticated gRPC boundaries record evidence and query prediction history.
+- [ ] Telemetry windows are obtained through an explicit outbound port/API without cross-database access.
+- [ ] Statistical anomaly detection is deterministic and unit-tested before LLM use.
+- [ ] Local embedding generation stores model name/version and vector dimensions.
+- [ ] Similar-incident retrieval is tenant/VIN scoped and uses pgvector distance ordering.
+- [ ] RAG prompts include only authorized evidence and return a validated structured result.
+- [ ] Predictions persist component, probability, severity, recommendation, and evidence citations.
+- [ ] High-confidence recommendations publish an event for Pekko/alert handling.
+- [ ] Actual outcomes link to predictions and produce accuracy/calibration metrics.
+- [ ] The AI path has deterministic fakes for CI and never requires a hosted external API.
+
+### Tasks
+
+- [x] Establish the Maintenance Predictor hexagonal boundary, JSONB entities, pgvector migration, and tenant isolation.
+- [ ] Replace the placeholder `LangChain4jPredictionEngine` with an outbound `PredictionEngine` port.
+- [ ] Define telemetry-window and embedding-store outbound ports.
+- [ ] Implement statistical baselines and anomaly scoring as deterministic domain logic.
+- [ ] Select and document local embedding and chat models, dimensions, resource needs, and licenses.
+- [ ] Implement embedding persistence and tenant-safe similarity search.
+- [ ] Implement structured LangChain4j RAG generation with schema validation and evidence citations.
+- [ ] Make scheduled work enumerate tenants explicitly and protect it with a lease/claim strategy.
+- [ ] Publish maintenance recommendation events and consume them behind the Pekko boundary.
+- [ ] Add feedback capture, accuracy metrics, and an AI evaluation dataset.
+- [ ] Add an E2E demo: anomalous telemetry → similar incidents → cited recommendation.
+
+## Phase 7 — Pekko stateful processing and command control
 
 ### Goals
 
 Keep Pekko behind a stable boundary and prove durable, recoverable per-vehicle
-behavior before expanding actor responsibilities.
+behavior. Then add reliable platform-to-device commands with timeout, retry,
+response correlation, auditing, and failure escalation.
 
 ### Acceptance criteria
 
@@ -161,6 +206,11 @@ behavior before expanding actor responsibilities.
 - [ ] Duplicate commands and events are idempotent.
 - [ ] Multi-node tests prove sharding, passivation, relocation, and shutdown.
 - [ ] Supervision, dead letters, and readiness are observable.
+- [ ] gRPC commands route through sharding to the tenant/VIN actor.
+- [ ] Commands publish to tenant-qualified MQTT topics and responses correlate by command ID.
+- [ ] Timeout/retry policy is configurable by command type and survives actor recovery.
+- [ ] Exhausted commands enter a replayable dead-letter/quarantine workflow.
+- [ ] Command requests, attempts, responses, and terminal outcomes form an audit trail.
 
 ### Tasks
 
@@ -169,8 +219,12 @@ behavior before expanding actor responsibilities.
 - [ ] Implement event sourcing, snapshots, retention, and schema evolution.
 - [ ] Add recovery, idempotency, and multi-node tests.
 - [ ] Connect telemetry with backpressure and retry policy.
+- [ ] Define command, acknowledgement, response, timeout, and audit event contracts.
+- [ ] Add tenant-qualified command/response ACLs and simulator command handling.
+- [ ] Implement durable retry timers, response correlation, and idempotency.
+- [ ] Add supervision/recovery and manual replay demonstrations.
 
-## Phase 7 — Streaming delivery
+## Phase 8 — Streaming delivery
 
 ### Goals
 
@@ -195,7 +249,7 @@ backpressure, and clear reconnect semantics.
 - [ ] Add replay/resume only if product requirements demand it.
 - [ ] Test cancellation, slow consumers, and broker interruption end to end.
 
-## Phase 8 — Test architecture and quality gates
+## Phase 9 — Test architecture and quality gates
 
 ### Goals
 
@@ -222,7 +276,7 @@ and critical vertical slices required CI gates.
 - [ ] Add E2E enrollment, telemetry, projection, and streaming scenarios.
 - [ ] Publish reports and enforce required CI checks.
 
-## Phase 9 — Resilience and operational correctness
+## Phase 10 — Resilience and operational correctness
 
 ### Goals
 
@@ -237,6 +291,11 @@ Make failures recoverable and ensure health signals and runbooks represent actua
 - [ ] Graceful shutdown drains work and safely releases leases.
 - [ ] Backup/restore and disaster-recovery procedures are exercised.
 - [ ] High-impact incidents have operational runbooks.
+- [ ] A slowed dependency demonstrates the selected timeout/circuit-breaker behavior.
+- [ ] Knative scale-to-zero and cold-start behavior are measured for eligible services.
+- [ ] A killed Pekko node demonstrates shard rebalance and journal recovery time.
+- [ ] Database interruption demonstrates buffering or explicit backpressure without silent loss.
+- [ ] Rolling deployment demonstrates no MQTT loss and documented stream reconnection.
 
 ### Tasks
 
@@ -246,8 +305,9 @@ Make failures recoverable and ensure health signals and runbooks represent actua
 - [ ] Implement dependency readiness and graceful shutdown.
 - [ ] Write broker, database, credential-compromise, and projection-rebuild runbooks.
 - [ ] Perform and document backup/restore.
+- [ ] Automate failure demonstrations for dependency slowdown, node loss, database outage, and rolling deployment.
 
-## Phase 10 — Observability and performance
+## Phase 11 — Observability and performance
 
 ### Goals
 
@@ -271,7 +331,7 @@ using representative workloads.
 - [ ] Define SLOs and alerts linked to runbooks.
 - [ ] Add ingestion/streaming load tests and record baselines.
 
-## Phase 11 — Deployment and production readiness
+## Phase 12 — Deployment and production readiness
 
 ### Goals
 
@@ -283,6 +343,7 @@ rollouts safe while preserving service/platform ownership.
 - [x] Kubernetes workload/platform ownership is documented.
 - [x] Workload directories are independently composable Kustomize bases.
 - [x] Docker Compose supplies local infrastructure.
+- [x] ArgoCD and image-update manifests provide a GitOps deployment baseline.
 - [ ] All bases and overlays render and validate in CI.
 - [ ] Production secrets are external to Git.
 - [ ] Images are digest-pinned, scanned, signed, and have SBOMs.
@@ -299,7 +360,7 @@ rollouts safe while preserving service/platform ownership.
 - [ ] Automate staged rollout, smoke tests, and rollback.
 - [ ] Run threat modeling and production-readiness review.
 
-## Phase 12 — Portfolio and educational completeness
+## Phase 13 — Portfolio and educational completeness
 
 ### Goals
 
@@ -326,10 +387,12 @@ Make FleetIQ easy to understand, run, evaluate, and extend without documentation
 
 ## Immediate implementation order
 
-1. Select and implement the production credential provider with rotation and revocation.
-2. Move container-backed tests to Failsafe and introduce a shared integration harness.
-3. Add poison-event retry limits, quarantine, and operational metrics.
-4. Implement Pekko event sourcing and recovery behind the existing boundary.
-5. Define and test streaming backpressure and subscription limits.
-6. Add the cross-service end-to-end vertical slice.
-7. Complete observability, resilience, and production deployment gates.
+1. Implement one deterministic predictive-maintenance slice: telemetry window → anomaly score → persisted prediction.
+2. Add tenant-safe pgvector similarity retrieval and a local-model RAG adapter with deterministic CI fakes.
+3. Select and implement the production credential provider with rotation and revocation.
+4. Move container-backed tests to Failsafe and introduce a shared integration harness.
+5. Add poison-event retry limits, quarantine, and operational metrics.
+6. Implement Pekko event sourcing/recovery, then reliable MQTT command delivery.
+7. Define and test streaming backpressure and subscription limits.
+8. Add enrollment, telemetry, topology, maintenance, and streaming E2E scenarios.
+9. Complete observability, resilience demonstrations, and production deployment gates.
