@@ -6,6 +6,9 @@ import io.fleetiq.maintenance.domain.port.inbound.PredictMaintenanceUseCase;
 import io.fleetiq.maintenance.domain.port.outbound.MaintenanceRepository;
 import io.fleetiq.maintenance.domain.port.outbound.PredictionEngine;
 import io.fleetiq.maintenance.domain.port.outbound.TelemetryWindowSource;
+import io.fleetiq.maintenance.domain.port.outbound.EmbeddingGenerator;
+import io.fleetiq.maintenance.domain.port.outbound.EmbeddingStore;
+import io.fleetiq.maintenance.domain.model.TelemetryEmbedding;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @ApplicationScoped
@@ -24,6 +29,8 @@ public class PredictorService implements PredictMaintenanceUseCase {
     private final TelemetryWindowSource telemetryWindowSource;
     private final TelemetryAnomalyDetector anomalyDetector;
     private final PredictionEngine predictionEngine;
+    private final EmbeddingGenerator embeddingGenerator;
+    private final EmbeddingStore embeddingStore;
 
     @Override
     public Uni<PredictionResult> predict(String tenantId, String vin, int lookbackDays) {
@@ -39,8 +46,19 @@ public class PredictorService implements PredictMaintenanceUseCase {
         Instant from = to.minus(lookbackDays, ChronoUnit.DAYS);
 
         return telemetryWindowSource.load(tenantId, vin, from, to)
-            .map(anomalyDetector::assess)
-            .flatMap(assessment -> predictionEngine.generate(tenantId, vin, assessment))
+            .flatMap(window -> {
+                var assessment = anomalyDetector.assess(window);
+                String content = evidenceContent(assessment);
+                return embeddingGenerator.generate(content)
+                    .map(vector -> new TelemetryEmbedding(
+                        UUID.randomUUID(), vin, window.from(), window.to(), vector,
+                        assessment.failureProbability(), content, null,
+                        Map.of("component", assessment.component(), "severity", assessment.severity().name())))
+                    .flatMap(value -> embeddingStore.save(tenantId, value))
+                    .flatMap(saved -> embeddingStore.findSimilar(
+                        tenantId, vin, saved.embedding(), 5, saved.id()))
+                    .flatMap(similar -> predictionEngine.generate(tenantId, vin, assessment, similar));
+            })
             .flatMap(prediction -> repository.savePrediction(tenantId, prediction));
     }
 
@@ -61,5 +79,13 @@ public class PredictorService implements PredictMaintenanceUseCase {
         if (tenantId == null || tenantId.isBlank()) {
             throw new IllegalArgumentException("Tenant ID is required");
         }
+    }
+
+    private static String evidenceContent(io.fleetiq.maintenance.domain.model.AnomalyAssessment assessment) {
+        return "component=" + assessment.component()
+            + "; severity=" + assessment.severity()
+            + "; probability=" + assessment.failureProbability()
+            + "; recommendation=" + assessment.recommendation()
+            + "; evidence=" + String.join(",", assessment.evidenceIds());
     }
 }
