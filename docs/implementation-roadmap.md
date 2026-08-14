@@ -165,12 +165,12 @@ for deterministic safety decisions.
 - [x] Maintenance evidence and predictions have tenant-scoped JSONB persistence.
 - [x] Flyway creates and verifies tenant-scoped pgvector embedding storage.
 - [x] Authenticated gRPC boundaries record evidence and query prediction history.
-- [ ] Telemetry windows are obtained through an explicit outbound port/API without cross-database access.
-- [ ] Statistical anomaly detection is deterministic and unit-tested before LLM use.
+- [x] Telemetry windows are obtained through an explicit outbound port/API without cross-database access.
+- [x] Statistical anomaly detection is deterministic and unit-tested before LLM use.
 - [ ] Local embedding generation stores model name/version and vector dimensions.
 - [ ] Similar-incident retrieval is tenant/VIN scoped and uses pgvector distance ordering.
 - [ ] RAG prompts include only authorized evidence and return a validated structured result.
-- [ ] Predictions persist component, probability, severity, recommendation, and evidence citations.
+- [x] Predictions persist component, probability, severity, recommendation, and evidence citations.
 - [ ] High-confidence recommendations publish an event for Pekko/alert handling.
 - [ ] Actual outcomes link to predictions and produce accuracy/calibration metrics.
 - [ ] The AI path has deterministic fakes for CI and never requires a hosted external API.
@@ -178,9 +178,10 @@ for deterministic safety decisions.
 ### Tasks
 
 - [x] Establish the Maintenance Predictor hexagonal boundary, JSONB entities, pgvector migration, and tenant isolation.
-- [ ] Replace the placeholder `LangChain4jPredictionEngine` with an outbound `PredictionEngine` port.
-- [ ] Define telemetry-window and embedding-store outbound ports.
-- [ ] Implement statistical baselines and anomaly scoring as deterministic domain logic.
+- [x] Replace the placeholder `LangChain4jPredictionEngine` with an outbound `PredictionEngine` port.
+- [x] Define a telemetry-window outbound port and authenticated telemetry API.
+- [ ] Define the embedding-store outbound port.
+- [x] Implement statistical baselines and anomaly scoring as deterministic domain logic.
 - [ ] Select and document local embedding and chat models, dimensions, resource needs, and licenses.
 - [ ] Implement embedding persistence and tenant-safe similarity search.
 - [ ] Implement structured LangChain4j RAG generation with schema validation and evidence citations.
@@ -387,12 +388,11 @@ Make FleetIQ easy to understand, run, evaluate, and extend without documentation
 
 ## Immediate implementation order
 
-1. Implement one deterministic predictive-maintenance slice: telemetry window → anomaly score → persisted prediction.
-2. Add tenant-safe pgvector similarity retrieval and a local-model RAG adapter with deterministic CI fakes.
-3. Select and implement the production credential provider with rotation and revocation.
-4. Move container-backed tests to Failsafe and introduce a shared integration harness.
-5. Add poison-event retry limits, quarantine, and operational metrics.
-6. Implement Pekko event sourcing/recovery, then reliable MQTT command delivery.
-7. Define and test streaming backpressure and subscription limits.
-8. Add enrollment, telemetry, topology, maintenance, and streaming E2E scenarios.
-9. Complete observability, resilience demonstrations, and production deployment gates.
+1. Add tenant-safe pgvector similarity retrieval and a local-model RAG adapter with deterministic CI fakes.
+2. Select and implement the production credential provider with rotation and revocation.
+3. Move container-backed tests to Failsafe and introduce a shared integration harness.
+4. Add poison-event retry limits, quarantine, and operational metrics.
+5. Implement Pekko event sourcing/recovery, then reliable MQTT command delivery.
+6. Define and test streaming backpressure and subscription limits.
+7. Add enrollment, telemetry, topology, maintenance, and streaming E2E scenarios.
+8. Complete observability, resilience demonstrations, and production deployment gates.

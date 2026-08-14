@@ -10,6 +10,7 @@ option java_multiple_files = true;
 service TelemetryIngestion {
     rpc IngestTelemetry(IngestTelemetryRequest) returns (IngestTelemetryResponse);
     rpc IngestBatch(stream TelemetrySample) returns (IngestBatchResponse);
+    rpc GetTelemetryWindow(GetTelemetryWindowRequest) returns (GetTelemetryWindowResponse);
 }
 
 message TelemetrySample {
@@ -32,4 +33,14 @@ message IngestTelemetryResponse {
 message IngestBatchResponse {
     int32 accepted_count = 1;
     int32 rejected_count = 2;
+}
+
+message GetTelemetryWindowRequest {
+    string vin = 1;
+    fleetiq.common.v1.Timestamp from = 2;
+    fleetiq.common.v1.Timestamp to = 3;
+}
+
+message GetTelemetryWindowResponse {
+    repeated TelemetrySample samples = 1;
 }

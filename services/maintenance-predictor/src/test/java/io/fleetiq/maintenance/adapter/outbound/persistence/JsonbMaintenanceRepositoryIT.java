@@ -2,6 +2,7 @@ package io.fleetiq.maintenance.adapter.outbound.persistence;
 
 import io.fleetiq.maintenance.domain.model.MaintenanceRecord;
 import io.fleetiq.maintenance.domain.model.Severity;
+import io.fleetiq.maintenance.domain.model.PredictionResult;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
@@ -36,6 +37,23 @@ class JsonbMaintenanceRepositoryIT {
         asserter.assertThat(() -> repository.findEventsByVin("tenant-b", VIN), events -> {
             assertEquals(1, events.size());
             assertEquals("battery", events.getFirst().component());
+        });
+    }
+
+    @Test
+    @RunOnVertxContext
+    void persistsStructuredPredictionSeverityAndEvidence(UniAsserter asserter) {
+        var prediction = new PredictionResult(UUID.randomUUID(), VIN, 0.8,
+            "engine-cooling", Severity.HIGH, 7, "Inspect cooling system",
+            java.util.List.of("telemetry:max-engine-temperature-c=114.00"));
+
+        asserter.execute(() -> pgPool.query(
+            "TRUNCATE TABLE maintenance_events, maintenance_predictions, telemetry_embeddings").execute());
+        asserter.execute(() -> repository.savePrediction("tenant-a", prediction));
+        asserter.assertThat(() -> repository.findPredictionsByVin("tenant-a", VIN, 10), predictions -> {
+            assertEquals(1, predictions.size());
+            assertEquals(Severity.HIGH, predictions.getFirst().severity());
+            assertEquals(prediction.evidenceIds(), predictions.getFirst().evidenceIds());
         });
     }
 

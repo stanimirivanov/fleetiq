@@ -31,6 +31,10 @@ public class PredictionEntity extends PanacheEntityBase {
     @Column(name = "predicted_component", length = 100)
     public String predictedComponent;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "severity", nullable = false, length = 20)
+    public io.fleetiq.maintenance.domain.model.Severity severity;
+
     @Column(name = "estimated_days_until_failure")
     public int estimatedDaysUntilFailure;
 

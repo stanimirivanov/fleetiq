@@ -47,6 +47,21 @@ public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.Telemetry
             .map(BatchAccumulator::toResponse);
     }
 
+    @Override
+    @RolesAllowed({"operator", "service"})
+    public Uni<GetTelemetryWindowResponse> getTelemetryWindow(GetTelemetryWindowRequest request) {
+        var from = mapper.mapTimestampToInstant(request.getFrom());
+        var to = mapper.mapTimestampToInstant(request.getTo());
+        if (request.getVin().isBlank() || from == null || to == null || !from.isBefore(to)) {
+            return Uni.createFrom().failure(new IllegalArgumentException("A VIN and valid telemetry window are required"));
+        }
+
+        return useCase.getTelemetryRange(currentTenant.get().tenantId(), request.getVin(), from, to)
+            .map(samples -> GetTelemetryWindowResponse.newBuilder()
+                .addAllSamples(samples.stream().map(mapper::toProto).toList())
+                .build());
+    }
+
     // Helper accumulator for thread-safe stream reduction
     private static class BatchAccumulator {
         private int accepted = 0;

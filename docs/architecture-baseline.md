@@ -25,6 +25,7 @@ flowchart LR
     Registry -->|"device projection events"| MQTT
     Ingestion -->|"position projection events"| MQTT
     MQTT --> Topology
+    Maintenance -->|"authenticated telemetry-window gRPC"| Ingestion
 
     Ingestion --> TelemetryDB[("telemetry_db")]
     Registry --> RegistryDB[("device_registry_db")]
