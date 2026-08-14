@@ -167,8 +167,8 @@ for deterministic safety decisions.
 - [x] Authenticated gRPC boundaries record evidence and query prediction history.
 - [x] Telemetry windows are obtained through an explicit outbound port/API without cross-database access.
 - [x] Statistical anomaly detection is deterministic and unit-tested before LLM use.
-- [ ] Local embedding generation stores model name/version and vector dimensions.
-- [ ] Similar-incident retrieval is tenant/VIN scoped and uses pgvector distance ordering.
+- [x] Local embedding generation stores model name/version and vector dimensions.
+- [x] Similar-incident retrieval is tenant/VIN scoped and uses pgvector distance ordering.
 - [ ] RAG prompts include only authorized evidence and return a validated structured result.
 - [x] Predictions persist component, probability, severity, recommendation, and evidence citations.
 - [ ] High-confidence recommendations publish an event for Pekko/alert handling.
@@ -180,10 +180,11 @@ for deterministic safety decisions.
 - [x] Establish the Maintenance Predictor hexagonal boundary, JSONB entities, pgvector migration, and tenant isolation.
 - [x] Replace the placeholder `LangChain4jPredictionEngine` with an outbound `PredictionEngine` port.
 - [x] Define a telemetry-window outbound port and authenticated telemetry API.
-- [ ] Define the embedding-store outbound port.
+- [x] Define the embedding-store outbound port.
 - [x] Implement statistical baselines and anomaly scoring as deterministic domain logic.
-- [ ] Select and document local embedding and chat models, dimensions, resource needs, and licenses.
-- [ ] Implement embedding persistence and tenant-safe similarity search.
+- [x] Select and document the local embedding model, dimensions, resource needs, and license.
+- [ ] Select and document the local chat model, resource needs, structured-output support, and license.
+- [x] Implement embedding persistence and tenant-safe similarity search.
 - [ ] Implement structured LangChain4j RAG generation with schema validation and evidence citations.
 - [ ] Make scheduled work enumerate tenants explicitly and protect it with a lease/claim strategy.
 - [ ] Publish maintenance recommendation events and consume them behind the Pekko boundary.
@@ -388,7 +389,7 @@ Make FleetIQ easy to understand, run, evaluate, and extend without documentation
 
 ## Immediate implementation order
 
-1. Add tenant-safe pgvector similarity retrieval and a local-model RAG adapter with deterministic CI fakes.
+1. Add a local-model RAG adapter with schema-validated output and deterministic CI fakes.
 2. Select and implement the production credential provider with rotation and revocation.
 3. Move container-backed tests to Failsafe and introduce a shared integration harness.
 4. Add poison-event retry limits, quarantine, and operational metrics.

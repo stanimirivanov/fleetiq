@@ -17,11 +17,15 @@ class MigrationTest {
         try (var connection = dataSource.getConnection(); var statement = connection.createStatement()) {
             try (var result = statement.executeQuery("SELECT count(*) FROM flyway_schema_history WHERE success")) {
                 assertTrue(result.next());
-                assertEquals(3, result.getInt(1));
+                assertEquals(4, result.getInt(1));
             }
             try (var result = statement.executeQuery("SELECT is_nullable FROM information_schema.columns WHERE table_name = 'maintenance_predictions' AND column_name = 'severity'")) {
                 assertTrue(result.next());
                 assertEquals("NO", result.getString(1));
+            }
+            try (var result = statement.executeQuery("SELECT format_type(a.atttypid, a.atttypmod) FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid WHERE c.relname = 'telemetry_embeddings' AND a.attname = 'embedding'")) {
+                assertTrue(result.next());
+                assertEquals("vector(384)", result.getString(1));
             }
             try (var result = statement.executeQuery("SELECT count(*) FROM information_schema.columns WHERE column_name = 'tenant_id' AND table_name IN ('maintenance_events', 'maintenance_predictions', 'telemetry_embeddings') AND is_nullable = 'NO'")) {
                 assertTrue(result.next());

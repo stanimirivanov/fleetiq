@@ -8,6 +8,10 @@ import io.fleetiq.maintenance.domain.model.TelemetryWindow;
 import io.fleetiq.maintenance.domain.port.outbound.MaintenanceRepository;
 import io.fleetiq.maintenance.domain.port.outbound.PredictionEngine;
 import io.fleetiq.maintenance.domain.port.outbound.TelemetryWindowSource;
+import io.fleetiq.maintenance.domain.port.outbound.EmbeddingStore;
+import io.fleetiq.maintenance.domain.model.GeneratedEmbedding;
+import io.fleetiq.maintenance.domain.model.SimilarIncident;
+import io.fleetiq.maintenance.domain.model.TelemetryEmbedding;
 import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
 
@@ -28,9 +32,12 @@ class PredictorServiceTest {
         TelemetryWindowSource source = (tenant, vin, from, to) -> Uni.createFrom().item(
             new TelemetryWindow(vin, from, to, List.of(
                 new TelemetryReading(to.minusSeconds(30), 114.0, 12.5, 72.0))));
-        PredictionEngine engine = (tenant, vin, assessment) ->
+        PredictionEngine engine = (tenant, vin, assessment, similar) ->
             Uni.createFrom().item(toPrediction(vin, assessment));
-        var service = new PredictorService(repository, source, new TelemetryAnomalyDetector(), engine);
+        var service = new PredictorService(repository, source, new TelemetryAnomalyDetector(), engine,
+            content -> Uni.createFrom().item(new GeneratedEmbedding(
+                "test-model", "1", 3, List.of(1.0f, 0.0f, 0.0f))),
+            embeddingStore());
 
         PredictionResult result = service.predict("tenant-a", "WVWZZZ1JZXW000001", 7)
             .await().indefinitely();
@@ -39,6 +46,21 @@ class PredictorServiceTest {
         assertEquals("engine-cooling", result.predictedComponent());
         assertEquals(0.8, result.failureProbability());
         assertEquals(List.of("telemetry:max-engine-temperature-c=114.00"), result.evidenceIds());
+    }
+
+    private static EmbeddingStore embeddingStore() {
+        return new EmbeddingStore() {
+            @Override
+            public Uni<TelemetryEmbedding> save(String tenantId, TelemetryEmbedding embedding) {
+                return Uni.createFrom().item(embedding);
+            }
+
+            @Override
+            public Uni<List<SimilarIncident>> findSimilar(String tenantId, String vin,
+                    GeneratedEmbedding query, int limit, UUID excludingId) {
+                return Uni.createFrom().item(List.of());
+            }
+        };
     }
 
     private static PredictionResult toPrediction(String vin, AnomalyAssessment assessment) {
