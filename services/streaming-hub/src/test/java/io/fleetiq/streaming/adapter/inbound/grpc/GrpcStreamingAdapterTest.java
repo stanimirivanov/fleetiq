@@ -39,7 +39,8 @@ class GrpcStreamingAdapterTest {
                 return new TenantIdentity("tenant-a", "test", Set.of("operator"));
             }
         };
-        var adapter = new GrpcStreamingAdapter(useCase, new GrpcPositionMapper(), tenant);
+        var adapter = new GrpcStreamingAdapter(useCase, new GrpcPositionMapper(), tenant,
+            new StreamAdmissionController(5, 500));
 
         var updates = adapter.watchVehicle(WatchVehicleRequest.newBuilder()
                 .setVin("1HGCM82633A004352").build())

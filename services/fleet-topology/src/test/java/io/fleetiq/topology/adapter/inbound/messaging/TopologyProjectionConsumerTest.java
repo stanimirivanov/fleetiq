@@ -10,12 +10,13 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class TopologyProjectionConsumerTest {
 
     private final StubUseCase useCase = new StubUseCase();
-    private final TopologyProjectionConsumer consumer = new TopologyProjectionConsumer(useCase);
+    private final StubQuarantine quarantine = new StubQuarantine();
+    private final TopologyProjectionConsumer consumer = new TopologyProjectionConsumer(useCase, quarantine);
 
     @Test
     void projectsDeviceEvent() {
@@ -44,13 +45,30 @@ class TopologyProjectionConsumerTest {
     }
 
     @Test
-    void rejectsMalformedEventsAndCoordinates() {
-        assertThrows(IllegalArgumentException.class,
-            () -> consumer.consumeDevice(new byte[]{1, 2, 3}).await().indefinitely());
+    void quarantinesMalformedEventsAndCoordinatesWithoutBrokerRedelivery() {
+        byte[] malformed = new byte[]{1, 2, 3};
+        consumer.consumeDevice(malformed).await().indefinitely();
+        assertEquals("device-projection.v1", quarantine.eventType);
+        assertArrayEquals(malformed, quarantine.payload);
+        assertEquals(1, quarantine.attempts);
+
         byte[] invalidPosition = PositionProjectionEvent.newBuilder()
             .setTenantId("tenant-a").setVin("1HGCM82633A004352").setLatitude(91).build().toByteArray();
-        assertThrows(IllegalArgumentException.class,
-            () -> consumer.consumePosition(invalidPosition).await().indefinitely());
+        consumer.consumePosition(invalidPosition).await().indefinitely();
+        assertEquals("position-projection.v1", quarantine.eventType);
+        assertEquals(1, quarantine.attempts);
+    }
+
+    @Test
+    void retriesTransientProjectionFailureThreeTimesThenQuarantines() {
+        useCase.fail = true;
+        consumer.consumeDevice(DeviceProjectionEvent.newBuilder()
+            .setTenantId("tenant-a").setVin("1HGCM82633A004352")
+            .setOccurredAtEpochMillis(1_765_000_000_000L).build().toByteArray())
+            .await().indefinitely();
+
+        assertEquals(3, useCase.calls);
+        assertEquals(3, quarantine.attempts);
     }
 
     private static final class StubUseCase implements TopologyProjectionUseCase {
@@ -58,9 +76,13 @@ class TopologyProjectionConsumerTest {
         private String positionVin;
         private double latitude;
         private double longitude;
+        private int calls;
+        private boolean fail;
 
         @Override
         public Uni<Void> projectDevice(String tenantId, VehicleProjection vehicle) {
+            calls++;
+            if (fail) return Uni.createFrom().failure(new IllegalStateException("database unavailable"));
             this.vehicle = vehicle;
             return Uni.createFrom().voidItem();
         }
@@ -71,6 +93,21 @@ class TopologyProjectionConsumerTest {
             this.positionVin = vin;
             this.latitude = latitude;
             this.longitude = longitude;
+            return Uni.createFrom().voidItem();
+        }
+    }
+
+    private static final class StubQuarantine
+        implements io.fleetiq.topology.domain.port.outbound.ProjectionQuarantine {
+        private String eventType;
+        private byte[] payload;
+        private int attempts;
+
+        @Override
+        public Uni<Void> quarantine(String eventType, byte[] payload, Throwable failure, int attempts) {
+            this.eventType = eventType;
+            this.payload = payload;
+            this.attempts = attempts;
             return Uni.createFrom().voidItem();
         }
     }

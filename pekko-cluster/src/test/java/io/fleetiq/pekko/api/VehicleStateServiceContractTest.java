@@ -28,7 +28,7 @@ class VehicleStateServiceContractTest {
     @Test
     void normalizesNullCommandPayload() {
         var command = new VehicleStateService.VehicleCommand(
-            "tenant-a", "1HGCM82633A004352", "LOCK", null);
+            "tenant-a", "1HGCM82633A004352", "LOCK", null, "command-1");
 
         assertEquals("", command.payload());
     }

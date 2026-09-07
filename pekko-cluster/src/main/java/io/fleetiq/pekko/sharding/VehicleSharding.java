@@ -29,7 +29,8 @@ public class VehicleSharding {
         return ClusterSharding.get(system).entityRefFor(VEHICLE_ENTITY_KEY, encode(tenantId, vin));
     }
 
-    static String encode(String tenantId, String vin) {
+    /** Returns the stable, delimiter-safe entity identity also used as the persistence ID suffix. */
+    public static String encode(String tenantId, String vin) {
         Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
         return encoder.encodeToString(tenantId.getBytes(StandardCharsets.UTF_8)) + "."
             + encoder.encodeToString(vin.getBytes(StandardCharsets.UTF_8));

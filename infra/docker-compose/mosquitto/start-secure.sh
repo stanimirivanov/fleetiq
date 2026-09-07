@@ -46,5 +46,6 @@ pattern write fleetiq/%u/+/telemetry
 pattern write fleetiq/%u/telemetry
 EOF
 chmod 600 "$acl_file"
+chown mosquitto:mosquitto "$password_file" "$acl_file"
 
 exec mosquitto -c /mosquitto/config/mosquitto.conf
