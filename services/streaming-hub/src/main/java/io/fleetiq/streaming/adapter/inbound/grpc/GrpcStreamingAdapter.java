@@ -15,6 +15,11 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.Duration;
 import java.util.Set;
 
+/**
+ * Authenticated server-streaming gRPC adapter for fleet and single-vehicle subscriptions.
+ * It injects the verified tenant identity, enforces admission limits, and then delegates stream
+ * filtering and backpressure to the application boundary.
+ */
 @GrpcService
 @RequiredArgsConstructor
 @TenantSecured

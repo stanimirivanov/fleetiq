@@ -10,7 +10,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-/** Applies per-principal subscription limits and releases capacity on every termination path. */
+/**
+ * Applies per-principal subscription limits before opening a live stream.
+ * Admission is evaluated lazily at subscription time, rejected requests become gRPC failures, and
+ * capacity is released on completion, cancellation, failure, or synchronous factory failure.
+ */
 @ApplicationScoped
 public class StreamAdmissionController {
 
@@ -31,6 +35,7 @@ public class StreamAdmissionController {
         this.maxVinsPerSubscription = maxVinsPerSubscription;
     }
 
+    /** Wraps a stream factory with per-principal concurrency and selected-VIN limits. */
     public <T> Multi<T> admit(TenantIdentity identity, int selectedVinCount,
                               Supplier<Multi<T>> streamFactory) {
         if (selectedVinCount > maxVinsPerSubscription) {

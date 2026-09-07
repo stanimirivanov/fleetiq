@@ -14,6 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Reusable behavioral contract for device repository adapters.
+ * It verifies round trips, expected absence, lifecycle updates, and isolation of identical VINs
+ * across tenants without coupling the assertions to a storage technology.
+ */
 public abstract class DeviceRepositoryContract {
 
     private static final String TENANT = "tenant-a";

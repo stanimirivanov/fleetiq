@@ -3,6 +3,7 @@ package io.fleetiq.pekko.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Provides a concise startup summary of the cluster settings most useful during local demos. */
 public class PekkoConfig {
 
     private static final Logger log = LoggerFactory.getLogger(PekkoConfig.class);

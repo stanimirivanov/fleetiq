@@ -12,9 +12,12 @@ import java.util.List;
  */
 public interface TelemetryRepository {
 
+    /** Stores the sample and its position-projection outbox event atomically. */
     Uni<Void> save(String tenantId, TelemetrySample sample);
 
+    /** Returns the bounded time window in reverse chronological order. */
     Uni<List<TelemetrySample>> findByVinAndTimeRange(String tenantId, String vin, Instant from, Instant to);
 
+    /** Computes average speed without loading the underlying samples; empty windows return zero. */
     Uni<Double> getAverageSpeed(String tenantId, String vin, Instant from, Instant to);
 }

@@ -13,6 +13,11 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
+/**
+ * PostgreSQL and Apache AGE implementation of the fleet topology projection.
+ * Relational tables provide timestamp-gated, idempotent updates and query support; accepted
+ * changes are synchronized to AGE in the same transaction so both representations agree.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class AgeTopologyRepository implements TopologyRepository {

@@ -13,6 +13,11 @@ import java.util.Optional;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Reactive PostgreSQL adapter for tenant-scoped device aggregates.
+ * Writes also append a topology projection event to the local outbox in the same transaction,
+ * eliminating the gap between committing device state and announcing that state downstream.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class PostgresDeviceRepository implements DeviceRepository {

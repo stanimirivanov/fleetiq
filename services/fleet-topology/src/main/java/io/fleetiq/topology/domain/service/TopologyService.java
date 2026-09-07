@@ -9,6 +9,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 
+/**
+ * Thin application service for graph mutation and queries.
+ * Keeping the use-case boundary independent of PostgreSQL and Apache AGE lets transports invoke
+ * topology behavior without inheriting persistence-specific APIs.
+ */
 @ApplicationScoped
 public class TopologyService implements TopologyUseCase {
 

@@ -10,7 +10,10 @@ import java.time.Instant;
  * eventually consistent vehicle projection.
  */
 public interface TopologyProjectionUseCase {
+    /** Applies device metadata unless the local projection already contains a newer event. */
     Uni<Void> projectDevice(String tenantId, VehicleProjection vehicle);
+
+    /** Applies a location observation unless a newer position has already been projected. */
     Uni<Void> projectPosition(String tenantId, String vin, double latitude, double longitude,
                               double altitude, Instant observedAt);
 }

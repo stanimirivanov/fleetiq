@@ -12,6 +12,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Reusable behavioral contract for every {@link TelemetryRepository} implementation.
+ * Concrete adapter tests supply storage lifecycle while these tests preserve ordering, aggregate,
+ * empty-window, and tenant-isolation semantics.
+ */
 public abstract class TelemetryRepositoryContract {
 
     private static final String VIN = "1HGCM82633A004352";

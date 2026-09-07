@@ -4,6 +4,11 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * Registered vehicle device and its lifecycle state.
+ * Creation goes through {@link #registerNew} so VIN format, required metadata, model year, and the
+ * initial status are enforced independently of transport and persistence concerns.
+ */
 public record Device(
     String vin,
     String deviceType,
@@ -51,6 +56,7 @@ public record Device(
         );
     }
 
+    /** Validates and returns a standards-shaped 17-character VIN for use at domain boundaries. */
     public static String validateVin(String vin) {
         if (vin == null || !VIN_PATTERN.matcher(vin).matches()) {
             throw new DeviceValidationException("VIN must contain 17 characters and exclude I, O and Q");

@@ -15,6 +15,12 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.function.Supplier;
 
+/**
+ * Consumes the device and position events that build the topology read model.
+ * Malformed messages are quarantined immediately; transient processing failures are retried
+ * twice before quarantine. Successful completion therefore means either projection or durable
+ * quarantine, allowing the broker message to be acknowledged safely.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class TopologyProjectionConsumer {

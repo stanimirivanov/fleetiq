@@ -11,6 +11,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Outbound MQTT adapter for simulated telemetry.
+ * It constructs the tenant-qualified topic expected by ingestion and requests QoS 1 delivery,
+ * so the downstream path must tolerate duplicate messages.
+ */
 @ApplicationScoped
 public class MqttClientManager {
 
@@ -22,6 +27,11 @@ public class MqttClientManager {
     @ConfigProperty(name = "fleetiq.simulator.tenant-id", defaultValue = "demo")
     String tenantId;
 
+    /**
+     * Publishes one JSON telemetry document under the configured simulator tenant.
+     * Publication completion is managed by the reactive messaging connector and its configured
+     * failure strategy.
+     */
     public void publishTelemetry(String vin, String jsonPayload) {
         String topic = "fleetiq/" + tenantId + "/" + vin + "/telemetry";
         emitter.send(MqttMessage.of(

@@ -6,6 +6,11 @@ import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 
+/**
+ * Minimal command-processing actor retained as an extension point for device command delivery.
+ * The baseline implementation records receipt only; it does not claim that a command reached a
+ * physical vehicle. Production acknowledgement semantics belong in a future outbound adapter.
+ */
 public class CommandHandler extends AbstractBehavior<CommandHandler.ProcessCommand> {
 
     public record ProcessCommand(String vin, String command, String payload) implements CborSerializable {}

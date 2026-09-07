@@ -20,6 +20,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Orchestrates the complete predictive-maintenance application workflow.
+ * It obtains an authorized telemetry window, performs deterministic anomaly scoring, stores a
+ * local semantic embedding, retrieves tenant-scoped similar incidents, asks the advisory engine
+ * for a grounded recommendation, and persists the result with any publication outbox event.
+ */
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor

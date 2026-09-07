@@ -15,6 +15,11 @@ import io.smallrye.mutiny.Uni;
 import lombok.RequiredArgsConstructor;
 import jakarta.annotation.security.RolesAllowed;
 
+/**
+ * Authenticated gRPC adapter for fleet graph commands and queries.
+ * The tenant is always obtained from the verified security context and is never accepted from
+ * the request payload, preserving isolation across every repository operation.
+ */
 @GrpcService
 @RequiredArgsConstructor
 @TenantSecured

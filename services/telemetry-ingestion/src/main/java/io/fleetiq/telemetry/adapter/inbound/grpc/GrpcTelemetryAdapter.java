@@ -12,6 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.security.RolesAllowed;
 
+/**
+ * Authenticated gRPC boundary for unary, client-streaming, and windowed telemetry operations.
+ * Stream items are processed sequentially so downstream demand provides backpressure and the
+ * batch accumulator never requires concurrent mutation.
+ */
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor
@@ -39,10 +44,8 @@ public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.Telemetry
     public Uni<IngestBatchResponse> ingestBatch(Multi<io.fleetiq.proto.telemetry.v1.TelemetrySample> requestStream) {
         return requestStream
             .onItem().transform(mapper::toDomain)
-            // ✅ Concatenate processes incoming items sequentially with backpressure controls
             .onItem().transformToUniAndConcatenate(sample ->
                 useCase.ingest(currentTenant.get().tenantId(), sample))
-            // ✅ Accumulate stream results safely without multi-threading race conditions
             .collect().in(BatchAccumulator::new, BatchAccumulator::accumulate)
             .map(BatchAccumulator::toResponse);
     }
@@ -62,7 +65,6 @@ public class GrpcTelemetryAdapter extends MutinyTelemetryIngestionGrpc.Telemetry
                 .build());
     }
 
-    // Helper accumulator for thread-safe stream reduction
     private static class BatchAccumulator {
         private int accepted = 0;
         private int rejected = 0;

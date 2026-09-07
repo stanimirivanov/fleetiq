@@ -18,7 +18,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.time.Duration;
 import java.util.List;
 
-/** Local Ollama adapter configured for deterministic JSON recommendations. */
+/**
+ * Local Ollama adapter configured for deterministic, structured recommendations.
+ * The blocking model call runs on a worker pool, prompt evidence is bounded, and JSON output is
+ * parsed into the narrow advice type before it reaches the prediction engine.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class OllamaRecommendationModel implements RecommendationModel {

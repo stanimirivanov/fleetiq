@@ -6,6 +6,10 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 
+/**
+ * Logs dead-letter information forwarded through the FleetIQ actor protocol.
+ * This actor is an observability aid and does not retry or otherwise alter failed delivery.
+ */
 public class DeadLetterMonitor extends AbstractBehavior<DeadLetterMonitor.DeadLetter> {
 
     public record DeadLetter(String message, String sender, String recipient) {}

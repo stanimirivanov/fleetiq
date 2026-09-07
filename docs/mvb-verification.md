@@ -52,6 +52,33 @@ The black-box run used the actual simulator and packaged Telemetry Ingestion and
 Fleet Topology services. Its captured logs were written under `target/mvb-demo/`,
 which is build output and is intentionally not versioned.
 
+## Java documentation audit
+
+The final documentation pass reviewed all 106 hand-written production Java files
+and 45 test files. Eighty production files now contain intent-focused Javadoc on
+security and actor APIs,
+inbound and outbound ports, application orchestration, transport delivery
+semantics, transactional persistence adapters, outbox relays, and reusable test
+contracts. The other 26 are deliberate policy exclusions: obvious launchers,
+persistence entities, mappers, enums, simple producers/exceptions, and plain data
+records. Generated sources were excluded from the hand-written inventory. This is
+in line with the [documentation guidelines](documentation-guidelines.md).
+
+Compilation and tests for every changed module passed. A clean reactor run passed
+through Streaming Hub's complete test suite, then stopped while assembling its JAR
+because the workstation had less than 400 MB of disk space; Pekko and Simulator
+had not yet run. After removing Maven-generated `target` directories, the affected
+tail of the reactor was verified with:
+
+```powershell
+$env:MAVEN_OPTS='-XX:-TieredCompilation'
+mvn -pl services/streaming-hub,pekko-cluster,simulator -am verify
+```
+
+That seven-module dependency closure completed successfully, including the Pekko
+JDBC recovery integration test. The interruption was environmental and did not
+represent a source, compilation, or test failure.
+
 ## Known non-blocking observations
 
 - Several upstream libraries emit Java 25 deprecation/native-access warnings.

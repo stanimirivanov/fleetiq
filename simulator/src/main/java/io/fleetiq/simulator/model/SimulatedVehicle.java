@@ -1,5 +1,10 @@
 package io.fleetiq.simulator.model;
 
+/**
+ * Mutable state used only by the local fleet simulator.
+ * It is not a domain aggregate: its random walk exists to generate plausible changing input for
+ * the production ingestion path.
+ */
 public class SimulatedVehicle {
 
     private final String vin;
@@ -16,8 +21,8 @@ public class SimulatedVehicle {
         this.speedKmh = 0.0;
     }
 
+    /** Advances the vehicle by a small random offset and chooses a new road speed. */
     public void updatePosition() {
-        // Simulate movement — will be implemented in Phase 1
         this.latitude += (Math.random() - 0.5) * 0.001;
         this.longitude += (Math.random() - 0.5) * 0.001;
         this.speedKmh = 30 + Math.random() * 80;

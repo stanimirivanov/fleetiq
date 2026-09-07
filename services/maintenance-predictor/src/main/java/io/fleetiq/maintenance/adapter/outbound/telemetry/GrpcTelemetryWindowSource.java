@@ -17,7 +17,11 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.Instant;
 
-/** gRPC adapter that preserves the caller's bearer token at the telemetry boundary. */
+/**
+ * Retrieves telemetry through the ingestion service's gRPC boundary instead of sharing its data.
+ * The caller's bearer token is forwarded so telemetry authorization and tenant isolation remain
+ * enforced by the service that owns the time-series data.
+ */
 @ApplicationScoped
 public class GrpcTelemetryWindowSource implements TelemetryWindowSource {
 

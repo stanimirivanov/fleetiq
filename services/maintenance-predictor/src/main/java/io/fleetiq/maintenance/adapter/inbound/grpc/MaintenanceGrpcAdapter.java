@@ -10,6 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.security.RolesAllowed;
 
+/**
+ * Authenticated gRPC adapter for prediction, history, and observed maintenance operations.
+ * It supplies the verified tenant identity to every use case and keeps protobuf conversion at the
+ * transport boundary.
+ */
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor

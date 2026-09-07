@@ -15,6 +15,11 @@ import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Hibernate Reactive adapter for tenant-scoped maintenance history and predictions.
+ * High-confidence predictions and their recommendation outbox events are committed atomically,
+ * while JSONB remains a persistence detail hidden from the domain model.
+ */
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor

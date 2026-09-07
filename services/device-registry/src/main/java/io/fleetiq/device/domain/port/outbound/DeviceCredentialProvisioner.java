@@ -10,5 +10,9 @@ public interface DeviceCredentialProvisioner {
 
     record ProvisionedCredential(String username, String secret) {}
 
+    /**
+     * Issues a credential for one tenant-scoped device. The returned secret is the only clear-text
+     * copy exposed to the caller and must not be logged or persisted by the application service.
+     */
     Uni<ProvisionedCredential> provision(String tenantId, String vin);
 }

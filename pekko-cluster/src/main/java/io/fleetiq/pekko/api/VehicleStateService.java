@@ -9,10 +9,22 @@ import java.util.concurrent.CompletionStage;
  */
 public interface VehicleStateService {
 
+    /**
+     * Applies telemetry in timestamp order. Replaying an identical observation is idempotent;
+     * older or conflicting observations are returned as rejected outcomes.
+     */
     CompletionStage<CommandOutcome> recordTelemetry(TelemetryUpdate update);
 
+    /**
+     * Dispatches a vehicle command. A recently seen command ID is accepted without applying the
+     * command twice, which lets callers retry after an uncertain response.
+     */
     CompletionStage<CommandOutcome> dispatchCommand(VehicleCommand command);
 
+    /**
+     * Reads the current state for a tenant-scoped vehicle. A newly activated vehicle has no last
+     * observation and reports a telemetry sequence of zero.
+     */
     CompletionStage<VehicleState> getState(String tenantId, String vin);
 
     record TelemetryUpdate(
