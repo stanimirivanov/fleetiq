@@ -31,6 +31,7 @@ public class PredictorService implements PredictMaintenanceUseCase {
     private final PredictionEngine predictionEngine;
     private final EmbeddingGenerator embeddingGenerator;
     private final EmbeddingStore embeddingStore;
+    private final RecommendationPublicationPolicy publicationPolicy;
 
     @Override
     public Uni<PredictionResult> predict(String tenantId, String vin, int lookbackDays) {
@@ -59,7 +60,8 @@ public class PredictorService implements PredictMaintenanceUseCase {
                         tenantId, vin, saved.embedding(), 5, saved.id()))
                     .flatMap(similar -> predictionEngine.generate(tenantId, vin, assessment, similar));
             })
-            .flatMap(prediction -> repository.savePrediction(tenantId, prediction));
+            .flatMap(prediction -> repository.savePrediction(
+                tenantId, prediction, publicationPolicy.shouldPublish(prediction)));
     }
 
     @Override

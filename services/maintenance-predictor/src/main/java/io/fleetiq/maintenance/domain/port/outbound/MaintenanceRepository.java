@@ -12,7 +12,13 @@ import java.util.List;
  */
 public interface MaintenanceRepository {
     Uni<MaintenanceRecord> saveEvent(String tenantId, MaintenanceRecord record);
-    Uni<PredictionResult> savePrediction(String tenantId, PredictionResult prediction);
+    /**
+     * Atomically stores a prediction and, when requested, stages its recommendation
+     * for asynchronous publication. This prevents a committed high-confidence
+     * prediction from being lost between database persistence and broker delivery.
+     */
+    Uni<PredictionResult> savePrediction(String tenantId, PredictionResult prediction,
+                                         boolean stageRecommendation);
     Uni<List<MaintenanceRecord>> findEventsByVin(String tenantId, String vin);
     Uni<List<PredictionResult>> findPredictionsByVin(String tenantId, String vin, int limit);
 }

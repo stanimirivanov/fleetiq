@@ -5,18 +5,22 @@ import io.fleetiq.proto.events.v1.DeviceProjectionEvent;
 import io.fleetiq.proto.events.v1.PositionProjectionEvent;
 import io.fleetiq.topology.domain.model.VehicleProjection;
 import io.fleetiq.topology.domain.port.inbound.TopologyProjectionUseCase;
+import io.fleetiq.topology.domain.port.outbound.ProjectionQuarantine;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import java.time.Instant;
+import java.time.Duration;
+import java.util.function.Supplier;
 
 @ApplicationScoped
 @RequiredArgsConstructor
 public class TopologyProjectionConsumer {
 
     private final TopologyProjectionUseCase useCase;
+    private final ProjectionQuarantine quarantine;
 
     @Incoming("device-projections-in")
     public Uni<Void> consumeDevice(byte[] payload) {
@@ -24,11 +28,12 @@ public class TopologyProjectionConsumer {
             DeviceProjectionEvent event = DeviceProjectionEvent.parseFrom(payload);
             requireTenant(event.getTenantId());
             requireVin(event.getVin());
-            return useCase.projectDevice(event.getTenantId(), new VehicleProjection(
+            return process("device-projection.v1", payload, () -> useCase.projectDevice(
+                event.getTenantId(), new VehicleProjection(
                 event.getVin(), event.getDeviceType(), event.getStatus(), null, null, null,
-                Instant.ofEpochMilli(event.getOccurredAtEpochMillis()), null));
-        } catch (InvalidProtocolBufferException e) {
-            return Uni.createFrom().failure(new IllegalArgumentException("Invalid device projection event", e));
+                Instant.ofEpochMilli(event.getOccurredAtEpochMillis()), null)));
+        } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
+            return quarantine.quarantine("device-projection.v1", payload, e, 1);
         }
     }
 
@@ -39,11 +44,19 @@ public class TopologyProjectionConsumer {
             requireTenant(event.getTenantId());
             requireVin(event.getVin());
             validateCoordinates(event.getLatitude(), event.getLongitude());
-            return useCase.projectPosition(event.getTenantId(), event.getVin(), event.getLatitude(), event.getLongitude(),
-                event.getAltitude(), Instant.ofEpochMilli(event.getObservedAtEpochMillis()));
-        } catch (InvalidProtocolBufferException e) {
-            return Uni.createFrom().failure(new IllegalArgumentException("Invalid position projection event", e));
+            return process("position-projection.v1", payload, () -> useCase.projectPosition(
+                event.getTenantId(), event.getVin(), event.getLatitude(), event.getLongitude(),
+                event.getAltitude(), Instant.ofEpochMilli(event.getObservedAtEpochMillis())));
+        } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
+            return quarantine.quarantine("position-projection.v1", payload, e, 1);
         }
+    }
+
+    private Uni<Void> process(String eventType, byte[] payload, Supplier<Uni<Void>> action) {
+        return Uni.createFrom().<Void>deferred(action::get)
+            .onFailure().retry().withBackOff(Duration.ofMillis(50), Duration.ofSeconds(1)).atMost(2)
+            .onFailure().recoverWithUni(failure ->
+                quarantine.quarantine(eventType, payload, failure, 3));
     }
 
     private static void requireVin(String vin) {

@@ -7,6 +7,10 @@ orders future work by dependency, and gives each milestone an observable definit
 of done. `[x]` means implemented and verified in the repository; `[ ]` means not
 implemented or not yet proven.
 
+The finite portfolio release gate is defined separately in the
+[Minimum Viable Baseline](mvb-release.md). Unchecked production-hardening items in
+this roadmap do not by themselves prevent an MVB release.
+
 Update this document in the same change as each implementation step. Check an item
 only when code, an automated test, or a documented operational exercise proves it.
 Create an ADR when a step changes a public contract, security boundary, data owner,
@@ -26,14 +30,14 @@ service implementations, and verified database migrations.
 - [x] Telemetry, Device Registry, and Fleet Topology use reactive persistence.
 - [x] Flyway uses JDBC while runtime persistence remains reactive.
 - [x] Migration tests use the required PostgreSQL extensions.
-- [ ] A clean environment succeeds with `mvn clean verify`.
+- [x] A clean environment succeeds with `mvn clean verify`.
 - [ ] CI enforces the documented JDK and Maven versions.
 
 ### Tasks
 
 - [x] Correct protobuf generation and source attachment.
 - [x] Align datasource and Flyway configuration.
-- [x] Add migration tests for TimescaleDB, AGE/PostGIS, and pgvector.
+- [x] Add migration tests for TimescaleDB, AGE, and pgvector.
 - [ ] Update dependencies that emit Quarkus relocation warnings.
 - [ ] Add build-toolchain validation.
 
@@ -52,8 +56,8 @@ synchronous query-time fan-out.
 - [x] Relays safely claim events across replicas with at-least-once delivery.
 - [x] Topology projections are idempotent and reject stale events.
 - [x] AGE vertices, relationships, traversal, and proximity queries are implemented.
-- [ ] A black-box test proves simulator → broker → ingestion → database → topology.
-- [ ] Poison events have bounded retries and a quarantine path.
+- [x] A black-box test proves simulator → broker → ingestion → database → topology.
+- [x] Poison events have bounded retries and a quarantine path.
 - [ ] Historical telemetry supports distance and time-bucket aggregations required by analytics.
 - [ ] Advanced topology proves downstream impact analysis and route-deviation detection.
 
@@ -63,8 +67,8 @@ synchronous query-time fan-out.
 - [x] Define additive projection contracts and outbox relays.
 - [x] Implement relational projection guards and AGE synchronization.
 - [ ] Standardize event IDs, correlation IDs, and schema-version metadata.
-- [ ] Add retry/backoff and dead-letter handling.
-- [ ] Add the cross-service black-box test.
+- [x] Add retry/backoff and dead-letter handling.
+- [x] Add the cross-service black-box test.
 - [ ] Add TimescaleDB aggregate queries for total distance and time buckets.
 - [ ] Add topology impact-analysis and route-deviation use cases with tests.
 - [ ] Add a 1,000-vehicle/1 Hz load scenario and record the baseline.
@@ -169,11 +173,11 @@ for deterministic safety decisions.
 - [x] Statistical anomaly detection is deterministic and unit-tested before LLM use.
 - [x] Local embedding generation stores model name/version and vector dimensions.
 - [x] Similar-incident retrieval is tenant/VIN scoped and uses pgvector distance ordering.
-- [ ] RAG prompts include only authorized evidence and return a validated structured result.
+- [x] RAG prompts include only authorized evidence and return a validated structured result.
 - [x] Predictions persist component, probability, severity, recommendation, and evidence citations.
-- [ ] High-confidence recommendations publish an event for Pekko/alert handling.
+- [x] High-confidence recommendations publish an event for Pekko/alert handling.
 - [ ] Actual outcomes link to predictions and produce accuracy/calibration metrics.
-- [ ] The AI path has deterministic fakes for CI and never requires a hosted external API.
+- [x] The AI path has deterministic fakes for CI and never requires a hosted external API.
 
 ### Tasks
 
@@ -183,13 +187,13 @@ for deterministic safety decisions.
 - [x] Define the embedding-store outbound port.
 - [x] Implement statistical baselines and anomaly scoring as deterministic domain logic.
 - [x] Select and document the local embedding model, dimensions, resource needs, and license.
-- [ ] Select and document the local chat model, resource needs, structured-output support, and license.
+- [x] Select and document the local chat model, resource needs, structured-output support, and license.
 - [x] Implement embedding persistence and tenant-safe similarity search.
-- [ ] Implement structured LangChain4j RAG generation with schema validation and evidence citations.
+- [x] Implement structured LangChain4j RAG generation with schema validation and evidence citations.
 - [ ] Make scheduled work enumerate tenants explicitly and protect it with a lease/claim strategy.
 - [ ] Publish maintenance recommendation events and consume them behind the Pekko boundary.
 - [ ] Add feedback capture, accuracy metrics, and an AI evaluation dataset.
-- [ ] Add an E2E demo: anomalous telemetry → similar incidents → cited recommendation.
+- [x] Add an E2E demo: anomalous telemetry → similar incidents → cited recommendation.
 
 ## Phase 7 — Pekko stateful processing and command control
 
@@ -203,9 +207,9 @@ response correlation, auditing, and failure escalation.
 
 - [x] A protobuf/gRPC boundary hides actor APIs.
 - [x] Shard identity combines tenant and VIN and actors validate ownership.
-- [ ] Vehicle actors are event-sourced with stable persistence IDs.
-- [ ] Journal/snapshot migrations and recovery are integration-tested.
-- [ ] Duplicate commands and events are idempotent.
+- [x] Vehicle actors are event-sourced with stable persistence IDs.
+- [x] Journal/snapshot migrations and recovery are integration-tested.
+- [x] Duplicate commands and events are idempotent.
 - [ ] Multi-node tests prove sharding, passivation, relocation, and shutdown.
 - [ ] Supervision, dead letters, and readiness are observable.
 - [ ] gRPC commands route through sharding to the tenant/VIN actor.
@@ -217,9 +221,10 @@ response correlation, auditing, and failure escalation.
 ### Tasks
 
 - [x] Define the service boundary and tenant-aware entity identity.
-- [ ] Define vehicle state, commands, events, and invariants.
-- [ ] Implement event sourcing, snapshots, retention, and schema evolution.
-- [ ] Add recovery, idempotency, and multi-node tests.
+- [x] Define vehicle state, commands, events, and invariants.
+- [x] Implement event sourcing, snapshots, retention, and schema evolution.
+- [x] Add recovery and idempotency tests against the JDBC journal.
+- [ ] Add multi-node sharding and relocation tests.
 - [ ] Connect telemetry with backpressure and retry policy.
 - [ ] Define command, acknowledgement, response, timeout, and audit event contracts.
 - [ ] Add tenant-qualified command/response ACLs and simulator command handling.
@@ -238,16 +243,16 @@ backpressure, and clear reconnect semantics.
 - [x] Streaming Hub consumes real MQTT rather than an in-memory subscriber registry.
 - [x] Streams filter authenticated tenant before VIN selection.
 - [x] Throttling is reactive and non-blocking.
-- [ ] Slow-consumer buffer/drop/disconnect policy is defined and tested.
+- [x] Slow-consumer buffer/drop/disconnect policy is defined and tested.
 - [ ] Reconnect and delivery semantics are documented.
-- [ ] Limits prevent subscription or memory exhaustion.
+- [x] Limits prevent subscription or memory exhaustion.
 - [ ] Client integration tests prove authorization and cancellation cleanup.
 
 ### Tasks
 
 - [x] Add the event-source port, MQTT adapter, and tenant-aware tests.
 - [ ] Record the backpressure policy in an ADR.
-- [ ] Add per-principal concurrency and subscription limits.
+- [x] Add per-principal concurrency and subscription limits.
 - [ ] Add replay/resume only if product requirements demand it.
 - [ ] Test cancellation, slow consumers, and broker interruption end to end.
 
@@ -273,7 +278,7 @@ and critical vertical slices required CI gates.
 
 - [x] Add the initial layered suites and MQTT authorization contract.
 - [ ] Move container-backed tests to Failsafe.
-- [ ] Share TimescaleDB, AGE/PostGIS, pgvector, Mosquitto, and Keycloak resources.
+- [ ] Share TimescaleDB, AGE, pgvector, Mosquitto, and Keycloak test resources where isolation permits.
 - [ ] Add deterministic cleanup and unique test identities.
 - [ ] Add E2E enrollment, telemetry, projection, and streaming scenarios.
 - [ ] Publish reports and enforce required CI checks.
@@ -373,27 +378,23 @@ Make FleetIQ easy to understand, run, evaluate, and extend without documentation
 - [x] Root and module READMEs explain responsibilities and boundaries.
 - [x] Architecture, testing, deployment, and documentation policies exist.
 - [x] This roadmap tracks completed and future implementation.
-- [ ] Diagrams match implemented communication and deployment paths.
+- [x] Diagrams distinguish implemented communication paths from the unverified deployment baseline.
 - [ ] ADRs explain consequential choices and alternatives.
-- [ ] A reproducible demo script exercises the primary journey.
+- [x] A reproducible demo script exercises the primary journey.
 - [ ] Documentation links and commands are checked automatically.
 
 ### Tasks
 
 - [x] Add selective educational Javadoc and module documentation.
 - [x] Add and index this roadmap.
-- [ ] Correct stale versions, URLs, and arrows in the root README.
+- [x] Correct stale versions, URLs, and arrows in the root README.
 - [ ] Add ADRs for credentials, event transport, streaming, and actor persistence.
-- [ ] Add a scripted demo with expected output.
+- [x] Add a scripted demo with expected output.
 - [ ] Add Markdown link and command validation to CI.
 
-## Immediate implementation order
+## Next implementation priorities after the MVB
 
-1. Add a local-model RAG adapter with schema-validated output and deterministic CI fakes.
-2. Select and implement the production credential provider with rotation and revocation.
-3. Move container-backed tests to Failsafe and introduce a shared integration harness.
-4. Add poison-event retry limits, quarantine, and operational metrics.
-5. Implement Pekko event sourcing/recovery, then reliable MQTT command delivery.
-6. Define and test streaming backpressure and subscription limits.
-7. Add enrollment, telemetry, topology, maintenance, and streaming E2E scenarios.
-8. Complete observability, resilience demonstrations, and production deployment gates.
+1. Connect the Pekko boundary to telemetry and command transports with durable retry.
+2. Complete the RPC authorization/status matrix and streaming cancellation tests.
+3. Validate and redesign the Kubernetes database extension topology.
+4. Add observability, capacity baselines, and operational recovery exercises.

@@ -24,21 +24,22 @@ public class GrpcStreamingAdapter extends MutinyFleetStreamingGrpc.FleetStreamin
     private final StreamingUseCase useCase;
     private final GrpcPositionMapper mapper;
     private final CurrentTenant currentTenant;
+    private final StreamAdmissionController admissionController;
 
     @Override
     public Multi<PositionUpdate> watchFleet(WatchFleetRequest request) {
-        return useCase.watchFleet(
-                currentTenant.get().tenantId(),
-                Set.copyOf(request.getVinsList()), interval(request.getMinUpdateIntervalSeconds()))
-            .map(mapper::toProto);
+        var identity = currentTenant.get();
+        return admissionController.admit(identity, request.getVinsCount(), () ->
+            useCase.watchFleet(identity.tenantId(), Set.copyOf(request.getVinsList()),
+                interval(request.getMinUpdateIntervalSeconds())).map(mapper::toProto));
     }
 
     @Override
     public Multi<PositionUpdate> watchVehicle(WatchVehicleRequest request) {
-        return useCase.watchVehicle(
-                currentTenant.get().tenantId(),
-                request.getVin(), interval(request.getMinUpdateIntervalSeconds()))
-            .map(mapper::toProto);
+        var identity = currentTenant.get();
+        return admissionController.admit(identity, 1, () ->
+            useCase.watchVehicle(identity.tenantId(), request.getVin(),
+                interval(request.getMinUpdateIntervalSeconds())).map(mapper::toProto));
     }
 
     private Duration interval(double seconds) {

@@ -21,3 +21,18 @@ message PositionProjectionEvent {
   int64 observed_at_epoch_millis = 5;
   string tenant_id = 6;
 }
+
+// Advisory maintenance result emitted after the prediction and outbox entry commit.
+message MaintenanceRecommendationEvent {
+  string event_id = 1;
+  string tenant_id = 2;
+  string prediction_id = 3;
+  string vin = 4;
+  string predicted_component = 5;
+  double failure_probability = 6;
+  string severity = 7;
+  int32 estimated_days_until_failure = 8;
+  string recommendation = 9;
+  repeated string evidence_ids = 10;
+  int64 occurred_at_epoch_millis = 11;
+}

@@ -11,12 +11,11 @@ services:
       POSTGRES_MULTIPLE_DATABASES: >
         telemetry_db,
         device_registry_db,
-        topology_db,
-        maintenance_db,
-        pekko_journal_db
+        pekko_journal_db,
+        keycloak_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./init-scripts/01-create-databases.sh:/docker-entrypoint-initdb.d/01-create-databases.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fleetiq"]
       interval: 5s
@@ -29,6 +28,50 @@ services:
         limits:
           memory: 1G
           cpus: "2"
+
+  # AGE must run in an image that contains the graph extension. Keeping it in a
+  # separate database container also makes the topology store independently replaceable.
+  topology-postgres:
+    image: apache/age:release_PG16_1.6.0
+    container_name: fleetiq-topology-postgres
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: fleetiq
+      POSTGRES_PASSWORD: fleetiq_dev
+      POSTGRES_DB: topology_db
+    volumes:
+      - topology_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/02-create-topology-extension.sql:/docker-entrypoint-initdb.d/02-create-topology-extension.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleetiq -d topology_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fleetiq-net
+
+  # pgvector is isolated from the operational stores because its extension and
+  # indexing lifecycle belong to Maintenance Predictor.
+  maintenance-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: fleetiq-maintenance-postgres
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: fleetiq
+      POSTGRES_PASSWORD: fleetiq_dev
+      POSTGRES_DB: maintenance_db
+    volumes:
+      - maintenance_postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/03-create-maintenance-extensions.sql:/docker-entrypoint-initdb.d/03-create-maintenance-extensions.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleetiq -d maintenance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fleetiq-net
 
   # ── MQTT Broker ────────────────────────────────────────
   mosquitto:
@@ -85,6 +128,34 @@ services:
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
     cap_add:
       - IPC_LOCK
+    networks:
+      - fleetiq-net
+
+  # ── Local Recommendation Model ─────────────────────────
+  ollama:
+    image: ollama/ollama:0.11.10
+    container_name: fleetiq-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - fleetiq-net
+
+  ollama-model:
+    image: ollama/ollama:0.11.10
+    container_name: fleetiq-ollama-model
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "qwen2.5:1.5b"]
+    depends_on:
+      ollama:
+        condition: service_healthy
     networks:
       - fleetiq-net
 
@@ -162,8 +233,11 @@ services:
 
 volumes:
   postgres_data:
+  topology_postgres_data:
+  maintenance_postgres_data:
   mosquitto_data:
   grafana_data:
+  ollama_data:
 
 networks:
   fleetiq-net:

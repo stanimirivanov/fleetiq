@@ -33,12 +33,13 @@ public interface VehicleStateService {
         }
     }
 
-    record VehicleCommand(String tenantId, String vin, String name, String payload) {
+    record VehicleCommand(String tenantId, String vin, String name, String payload, String commandId) {
         public VehicleCommand {
             validateTenant(tenantId);
             VehicleStateValidation.validateVin(vin);
             if (name == null || name.isBlank()) throw new IllegalArgumentException("Command name is required");
             payload = payload == null ? "" : payload;
+            if (commandId == null || commandId.isBlank()) throw new IllegalArgumentException("commandId is required");
         }
     }
 

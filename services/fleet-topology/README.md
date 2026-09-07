@@ -7,6 +7,9 @@ calls to source services.
 - Inbound boundaries: authenticated topology gRPC API plus device and position MQTT events.
 - Persistence: relational timestamp gates and query projections alongside Apache AGE vertices and edges.
 - Consistency: duplicate and stale events are ignored using independent device and position timestamps.
+- Failure handling: malformed messages are quarantined immediately; transient projection
+  failures use bounded backoff and are quarantined after three attempts so MQTT delivery
+  cannot loop forever.
 - Queries: bounded undirected traversal and distance-ordered proximity search.
 - Tenant isolation: event projections, relational keys, AGE vertices and edges, traversals,
   and proximity searches are scoped by tenant.

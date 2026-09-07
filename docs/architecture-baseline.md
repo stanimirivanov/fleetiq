@@ -24,6 +24,7 @@ flowchart LR
     MQTT --> Streaming
     Registry -->|"device projection events"| MQTT
     Ingestion -->|"position projection events"| MQTT
+    Maintenance -->|"high-confidence recommendation events"| MQTT
     MQTT --> Topology
     Maintenance -->|"authenticated telemetry-window gRPC"| Ingestion
 
@@ -68,17 +69,22 @@ ports to call outbound adapters.
 
 ## Data ownership
 
-Services use separate databases on one PostgreSQL cluster. Sharing the cluster
-is an operational choice; it does not permit cross-service table access.
+Each service owns a separate database and never reads another service's tables.
+Whether databases share a PostgreSQL server is an operational choice. The local
+Compose environment deliberately uses separate servers because the supported
+TimescaleDB, Apache AGE, and pgvector images do not provide one common extension
+bundle.
 
 ```mermaid
 flowchart TB
-    PG["PostgreSQL cluster"]
-    PG --> TDB["telemetry_db<br/>TimescaleDB telemetry and outbox"]
-    PG --> RDB["device_registry_db<br/>devices and outbox"]
-    PG --> FDB["topology_db<br/>relational projection, AGE, and PostGIS"]
-    PG --> MDB["maintenance_db<br/>JSONB evidence and predictions, pgvector"]
-    PG --> PDB["pekko_journal_db<br/>journal and snapshots"]
+    CorePG["Core PostgreSQL server<br/>TimescaleDB image"]
+    AgePG["Topology PostgreSQL server<br/>Apache AGE image"]
+    VectorPG["Maintenance PostgreSQL server<br/>pgvector image"]
+    CorePG --> TDB["telemetry_db<br/>TimescaleDB telemetry and outbox"]
+    CorePG --> RDB["device_registry_db<br/>devices and outbox"]
+    CorePG --> PDB["pekko_journal_db<br/>journal and snapshots"]
+    AgePG --> FDB["topology_db<br/>relational projection and AGE"]
+    VectorPG --> MDB["maintenance_db<br/>JSONB evidence and predictions, pgvector, outbox"]
 
     Ingestion["Telemetry Ingestion"] --> TDB
     Registry["Device Registry"] --> RDB
@@ -98,10 +104,9 @@ flowchart TB
 ## Tenant boundary
 
 Authentication establishes `CurrentTenant` at inbound API boundaries. Tenant
-identity must become an explicit input to every tenant-owned use case and
-repository operation before multiple production tenants are enabled.
+identity is an explicit input to tenant-owned use cases and repository operations.
 
-The migration must be performed as one compatibility change per service:
+The implemented migration followed one compatibility change per service:
 
 1. Add non-null `tenant_id` with an explicit backfill for existing development
    data.
@@ -133,9 +138,12 @@ principal is development-only and must not be provisioned in production.
   must enumerate tenant work explicitly rather than inventing a request tenant.
 - Streaming Hub extracts tenant identity from tenant-qualified MQTT topics and
   filters every authenticated gRPC stream by tenant before VIN selection.
-- Pekko vehicle state uses tenant-and-VIN shard identity and validates tenant
-  ownership again inside the actor. Future persistence IDs must preserve this
-  composite identity.
+  Per-principal concurrency, VIN-selection, and slow-consumer buffer limits bound
+  resource use; every stream termination path releases its admission slot.
+- Pekko vehicle state uses tenant-and-VIN shard and persistence identity and
+  validates tenant ownership again inside the actor. Accepted facts are journaled;
+  snapshots and a bounded recent-command-ID history provide restart recovery and
+  duplicate-command idempotency. The composite identity is a compatibility boundary.
 
 ## API compatibility
 
@@ -158,6 +166,9 @@ principal is development-only and must not be provisioned in production.
   failure rolls back the transaction, providing at-least-once delivery.
 - Consumers are idempotent and reject stale updates by event timestamp. Fleet
   Topology enforces this with timestamp-guarded relational upserts.
+- Malformed projection messages are quarantined immediately. Transient projection
+  failures retry three times with bounded backoff and then persist the payload and
+  failure details for inspection, preventing indefinite broker redelivery.
 - An accepted relational update and its corresponding Apache AGE vertex are
   synchronized in the same database transaction.
 - Relationship identity and traversal metadata are stored in a relational
@@ -195,12 +206,20 @@ Device projection events follow the same outbox and relay pattern from Device
 Registry to Fleet Topology. The live Streaming Hub path consumes telemetry from
 MQTT; it does not currently stream from Pekko.
 
+High-confidence maintenance predictions use the same transactional-outbox rule.
+Maintenance Predictor stores the prediction and a versioned protobuf recommendation
+event atomically, then relays it to MQTT with at-least-once delivery. The event
+contains tenant and prediction identity plus the validated evidence citations.
+Pekko/alert consumption remains a separate boundary so consumers can be added
+without coupling model inference to actor APIs.
+
 ## Deployment model
 
 The Kubernetes manifests declare Quarkus services as Knative services and Pekko
 and PostgreSQL as StatefulSets. Istio supplies workload mTLS and ingress policy;
-Argo CD owns reconciliation. This is the declared deployment topology, not a
-claim that every production-readiness scenario has been proven.
+Argo CD owns reconciliation. These manifests are a future deployment baseline,
+not part of the locally verified MVB. In particular, production extension-image
+distribution and manifest validation remain Phase 12 work.
 
 ```mermaid
 flowchart TB

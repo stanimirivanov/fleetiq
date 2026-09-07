@@ -6,6 +6,8 @@ A portfolio project demonstrating modern backend architecture patterns using **Q
 
 - [Documentation index](docs/README.md)
 - [Implementation roadmap](docs/implementation-roadmap.md)
+- [Minimum viable baseline release](docs/mvb-release.md)
+- [MVB verification record](docs/mvb-verification.md)
 - [Architecture baseline](docs/architecture-baseline.md)
 - [Testing strategy](docs/testing-strategy.md)
 - [Deployment ownership](docs/deployment-ownership.md)
@@ -42,6 +44,7 @@ graph TB
         PG[(PostgreSQL<br/>Device Registry)]
         AG[(Apache AGE<br/>Graph Topology)]
         JB[(JSONB + pgvector<br/>Maintenance)]
+        PJ[(PostgreSQL<br/>Pekko Journal)]
     end
 
     subgraph "Operations"
@@ -55,27 +58,31 @@ graph TB
 
     SIM -->|MQTT| MQTT
     MQTT --> TI
+    MQTT --> SH
     TI --> TS
-    TI -->|gRPC| PK
-    TI -->|gRPC Stream| SH
+    TI -->|Position outbox| MQTT
     DR --> PG
+    DR -->|Device outbox| MQTT
+    MQTT --> FT
     FT --> AG
     MP --> JB
-    PK -->|JDBC Journal| PG
-    SH -->|gRPC Stream| SIM
+    MP -->|Telemetry window gRPC| TI
+    MP -->|Recommendation outbox| MQTT
+    SH -->|gRPC Stream| CLIENT[Authenticated client]
+    PK --> PJ
 ```
 
 ## **Technology Stack**
 
 | Layer         | Technology                                       | Purpose                                       |
 |:--------------|:-------------------------------------------------|:----------------------------------------------|
-| Runtime       | Quarkus 3.19                                     | Microservices framework, GraalVM native       |
-| Actor Model   | Apache Pekko 1.1                                 | Stateful vehicle processing, cluster sharding |
-| AI/ML         | LangChain4j                                      | Predictive maintenance with RAG               |
+| Runtime       | Quarkus 3.38.1                                   | Reactive microservices and gRPC                |
+| Actor Model   | Apache Pekko 1.3.0                               | Tenant-scoped vehicle state boundary           |
+| AI/ML         | LangChain4j 1.18.1, local ONNX and Ollama        | Embeddings and evidence-constrained RAG        |
 | Database      | PostgreSQL 16 \+ TimescaleDB, AGE, pgvector      | Time-series, graph, vector search             |
-| Messaging     | MQTT (Mosquitto)                                 | Device telemetry ingestion                    |
+| Messaging     | MQTT (Mosquitto)                                 | Telemetry and asynchronous projection events  |
 | RPC           | gRPC                                             | Inter-service communication \+ streaming      |
-| Security      | Keycloak \+ Vault \+ mTLS                        | Identity, secrets, zero-trust                 |
+| Security      | Keycloak, MQTT ACLs, development Vault, Istio    | Identity, authorization, declared mesh mTLS   |
 | Observability | OpenTelemetry → Grafana, Prometheus, Tempo, Loki | Metrics, traces, logs                         |
 | Deployment    | Kubernetes \+ Knative \+ Istio \+ ArgoCD         | Cloud-native GitOps                           |
 
@@ -95,24 +102,26 @@ adapter/inbound/grpc  ──►  domain/port/inbound  ──►  domain/service 
 
 ### **Actor Model (Pekko)**
 
-Each physical vehicle is represented as a stateful actor:
+Each physical vehicle is represented by tenant-and-VIN-scoped state behind a stable API:
 
 * **Location-transparent** addressing via Cluster Sharding
-* **Event-sourced** state with Pekko Persistence (JDBC journal)
-* **Supervision hierarchy** for fault tolerance
-* **Dead letter monitoring** for failed commands
+* **Tenant ownership validation** inside the actor as defense in depth
+* **Asynchronous results** without leaking actor references to service callers
+* **Durable state:** event-sourced telemetry and command facts with snapshots,
+  restart recovery, and duplicate-command idempotency
 
 ### **Database per Service**
 
-Single PostgreSQL cluster with logical separation via databases:
+Each service owns its database. Physical placement is an operational concern; the
+local environment uses separate PostgreSQL images where extension bundles differ:
 
 | Service               | Database             | Specialization              |
 |:----------------------|:---------------------|:----------------------------|
 | Telemetry Ingestion   | telemetry\_db        | TimescaleDB hypertables     |
 | Device Registry       | device\_registry\_db | Standard relational         |
-| Fleet Topology        | topology\_db         | Apache AGE graph \+ PostGIS |
+| Fleet Topology        | topology\_db         | Apache AGE graph             |
 | Maintenance Predictor | maintenance\_db      | JSONB documents \+ pgvector |
-| Pekko Journal         | pekko\_journal\_db   | Event journal \+ snapshots  |
+| Pekko                 | pekko\_journal\_db   | Event journal \+ snapshots  |
 
 ### **Communication Protocols**
 
@@ -129,45 +138,62 @@ graph LR
         SH[Streaming Hub]
     end
 
-    D -->|MQTT QoS 1| TI
-    TI -->|gRPC Unary| DR
-    TI -->|gRPC Unary| PK
-    PK -->|gRPC Server Streaming| SH
+    D -->|MQTT QoS 1| MQTT[MQTT broker]
+    MQTT --> TI
+    MQTT --> SH
+    TI -->|Position projection event| MQTT[MQTT]
+    DR -->|Device projection event| MQTT
+    MQTT --> FT[Fleet Topology]
+    MQTT --> SH
+    MP[Maintenance Predictor] -->|Telemetry window gRPC| TI
+    MP -->|Recommendation event| MQTT
     SH -->|gRPC Server Streaming| Client
 ```
+
+The Pekko module exposes an isolated tenant/VIN state boundary backed by an event
+journal. No service integration edge is claimed in these diagrams until a caller
+is connected through that boundary and verified end to end.
 
 ## **Quickstart**
 
 ### **Prerequisites**
 
-* Java 25+
+* Java 25
 * Docker Desktop
 * Maven 3.9+
+
+On Oracle JDK 25.0.4 for Windows, HotSpot may rarely crash while JIT-compiling
+`javac`. If that JVM defect occurs, run Maven from PowerShell with tiered
+compilation disabled: `$env:MAVEN_OPTS='-XX:-TieredCompilation'`.
 
 ### **Start Development Environment**
 
 ```bash
-# Clone and build
-git clone https://github.com/your-org/fleetiq.git  
-cd fleetiq  
-mvn install -DskipTests
+# From the repository root, verify the project
+mvn clean verify
 
 # Start infrastructure
-cd infra/docker-compose  
-docker compose up -d
+docker compose -f infra/docker-compose/docker-compose.yml up -d
 
 # Start services (each in a separate terminal)*  
-cd services/telemetry-ingestion  
-mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled
+mvn -pl services/telemetry-ingestion -am quarkus:dev -Dquarkus.test.continuous-testing=disabled
 
-cd services/device-registry  
-mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled
+mvn -pl services/device-registry -am quarkus:dev -Dquarkus.test.continuous-testing=disabled
 
 # ... repeat for other services
 
 # Start simulator  
 cd simulator
 mvn quarkus:dev -Dquarkus.test.continuous-testing=disabled
+```
+
+To demonstrate the core data path rather than starting every optional component,
+PowerShell 7 users can run the executable MVB check. It builds and starts the
+simulator, secured MQTT, Telemetry Ingestion, and Fleet Topology, then queries both
+databases for telemetry created during that run:
+
+```powershell
+./scripts/run-mvb-telemetry-demo.ps1
 ```
 
 ### **Access Services**

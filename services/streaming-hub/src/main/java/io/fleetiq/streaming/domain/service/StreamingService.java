@@ -6,16 +6,28 @@ import io.fleetiq.streaming.domain.port.outbound.PositionEventSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.FixedDemandPacer;
 import jakarta.enterprise.context.ApplicationScoped;
-import lombok.RequiredArgsConstructor;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Duration;
 import java.util.Set;
 
 @ApplicationScoped
-@RequiredArgsConstructor
 public class StreamingService implements StreamingUseCase {
 
     private final PositionEventSource eventSource;
+    private final int maxBufferedEvents;
+
+    @Inject
+    public StreamingService(PositionEventSource eventSource,
+        @ConfigProperty(name = "fleetiq.streaming.max-buffered-events", defaultValue = "256")
+        int maxBufferedEvents) {
+        if (maxBufferedEvents < 1 || maxBufferedEvents > 10_000) {
+            throw new IllegalArgumentException("Buffered event limit must be between 1 and 10000");
+        }
+        this.eventSource = eventSource;
+        this.maxBufferedEvents = maxBufferedEvents;
+    }
 
     @Override
     public Multi<PositionEvent> watchFleet(String tenantId, Set<String> vins, Duration minimumInterval) {
@@ -26,7 +38,7 @@ public class StreamingService implements StreamingUseCase {
         Multi<PositionEvent> stream = eventSource.positions()
             .select().where(event -> tenantId.equals(event.tenantId())
                 && (selectedVins.isEmpty() || selectedVins.contains(event.vin())));
-        return throttle(stream, minimumInterval);
+        return bounded(throttle(stream, minimumInterval));
     }
 
     @Override
@@ -39,7 +51,7 @@ public class StreamingService implements StreamingUseCase {
         }
         Multi<PositionEvent> stream = eventSource.positions()
             .select().where(event -> tenantId.equals(event.tenantId()) && vin.equals(event.vin()));
-        return throttle(stream, minimumInterval);
+        return bounded(throttle(stream, minimumInterval));
     }
 
     private Multi<PositionEvent> throttle(Multi<PositionEvent> stream, Duration minimumInterval) {
@@ -51,5 +63,9 @@ public class StreamingService implements StreamingUseCase {
                 new IllegalArgumentException("Minimum update interval cannot be negative"));
         }
         return stream.paceDemand().using(new FixedDemandPacer(1, minimumInterval));
+    }
+
+    private Multi<PositionEvent> bounded(Multi<PositionEvent> stream) {
+        return stream.onOverflow().buffer(maxBufferedEvents);
     }
 }
