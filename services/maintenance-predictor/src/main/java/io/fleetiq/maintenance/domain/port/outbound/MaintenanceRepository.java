@@ -11,6 +11,7 @@ import java.util.List;
  * storage-specific JSON and entity representations outside the domain layer.
  */
 public interface MaintenanceRepository {
+    /** Stores an observed maintenance event inside the tenant boundary. */
     Uni<MaintenanceRecord> saveEvent(String tenantId, MaintenanceRecord record);
     /**
      * Atomically stores a prediction and, when requested, stages its recommendation
@@ -19,6 +20,10 @@ public interface MaintenanceRepository {
      */
     Uni<PredictionResult> savePrediction(String tenantId, PredictionResult prediction,
                                          boolean stageRecommendation);
+
+    /** Returns observed events newest first for use as history and authorized evidence. */
     Uni<List<MaintenanceRecord>> findEventsByVin(String tenantId, String vin);
+
+    /** Returns at most {@code limit} predictions newest first. */
     Uni<List<PredictionResult>> findPredictionsByVin(String tenantId, String vin, int limit);
 }

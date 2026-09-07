@@ -12,6 +12,11 @@ import io.smallrye.reactive.messaging.mqtt.MqttMessage;
 
 import java.time.Instant;
 
+/**
+ * Hot MQTT-backed source for live position updates.
+ * Tenant identity is extracted from the topic and the topic VIN must match the payload. Malformed
+ * messages are logged and discarded so one bad device publication does not terminate all streams.
+ */
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor

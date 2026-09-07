@@ -27,6 +27,11 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * Guards the published protobuf surface against accidental breaking changes.
+ * The current descriptors are compared with a checked-in baseline by stable field numbers, enum
+ * values, referenced types, and RPC streaming shape.
+ */
 class ProtoCompatibilityTest {
 
     private static final String BASELINE = "/contract/fleetiq-api.pb";

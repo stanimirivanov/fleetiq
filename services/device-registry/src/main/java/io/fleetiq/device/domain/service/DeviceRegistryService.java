@@ -13,6 +13,11 @@ import java.util.Optional;
 import java.time.Clock;
 import java.time.Year;
 
+/**
+ * Coordinates device registration, lifecycle changes, and one-time credential enrollment.
+ * Expected business outcomes such as duplicates and missing devices remain typed results; only
+ * invalid commands fail validation.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class DeviceRegistryService implements DeviceRegistryUseCase {

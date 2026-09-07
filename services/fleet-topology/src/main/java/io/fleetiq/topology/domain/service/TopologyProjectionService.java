@@ -9,6 +9,11 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
 
+/**
+ * Applies device and position events to the topology service's local read model.
+ * Event ordering and idempotency are delegated to the repository because they must be enforced
+ * atomically with the stored projection.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class TopologyProjectionService implements TopologyProjectionUseCase {

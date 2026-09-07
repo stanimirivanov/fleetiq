@@ -16,6 +16,10 @@ import java.util.Locale;
 @ApplicationScoped
 public class TelemetryAnomalyDetector {
 
+    /**
+     * Evaluates a non-empty telemetry window and returns the strongest supported anomaly.
+     * The score combines absolute safety thresholds with deviation from the observed window.
+     */
     public AnomalyAssessment assess(TelemetryWindow window) {
         if (window.readings().isEmpty()) {
             throw new IllegalArgumentException("Telemetry window contains no readings");

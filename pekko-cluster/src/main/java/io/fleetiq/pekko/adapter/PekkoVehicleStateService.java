@@ -11,6 +11,11 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Pekko implementation of the stable vehicle-state application boundary.
+ * It hides shard lookup, actor protocol messages, and ask-pattern timeouts so callers do not
+ * become coupled to the actor runtime.
+ */
 public final class PekkoVehicleStateService implements VehicleStateService {
 
     private final ActorSystem<?> actorSystem;

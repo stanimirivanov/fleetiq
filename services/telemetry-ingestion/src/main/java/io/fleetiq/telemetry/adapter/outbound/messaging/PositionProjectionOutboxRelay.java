@@ -13,6 +13,11 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import java.util.UUID;
 import java.util.function.Function;
 
+/**
+ * Publishes committed position projection events from the telemetry outbox.
+ * A row is removed only after broker acknowledgement; a crash between publish and delete can
+ * produce a duplicate, which the timestamp-gated topology consumer safely ignores.
+ */
 @ApplicationScoped
 public class PositionProjectionOutboxRelay {
 

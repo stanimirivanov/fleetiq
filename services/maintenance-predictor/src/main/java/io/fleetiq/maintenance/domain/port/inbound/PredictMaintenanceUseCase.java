@@ -11,7 +11,12 @@ import java.util.List;
  * maintenance, and reading prediction history.
  */
 public interface PredictMaintenanceUseCase {
+    /** Produces a grounded prediction from between 1 and 365 days of telemetry. */
     Uni<PredictionResult> predict(String tenantId, String vin, int lookbackDays);
+
+    /** Records an observed maintenance event for later history and retrieval evidence. */
     Uni<MaintenanceRecord> recordEvent(String tenantId, MaintenanceRecord record);
+
+    /** Returns the newest predictions for a tenant-scoped vehicle, bounded by {@code limit}. */
     Uni<List<PredictionResult>> getHistory(String tenantId, String vin, int limit);
 }

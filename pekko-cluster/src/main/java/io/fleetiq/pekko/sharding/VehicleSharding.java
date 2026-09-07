@@ -9,11 +9,17 @@ import org.apache.pekko.cluster.sharding.typed.javadsl.EntityTypeKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+/**
+ * Bootstraps the vehicle shard region and resolves tenant-scoped vehicle entities.
+ * Tenant and VIN are encoded together so identical VINs owned by different tenants never share
+ * actor state or a persistence identifier.
+ */
 public class VehicleSharding {
 
     public static final EntityTypeKey<VehicleActor.Command> VEHICLE_ENTITY_KEY =
         EntityTypeKey.create(VehicleActor.Command.class, "Vehicle");
 
+    /** Registers the vehicle entity type with cluster sharding for the supplied actor system. */
     public static void init(ActorSystem<?> system) {
         ClusterSharding.get(system).init(
             Entity.of(VEHICLE_ENTITY_KEY, ctx -> {
@@ -23,13 +29,18 @@ public class VehicleSharding {
         );
     }
 
+    /** Returns the sharded entity reference for exactly one tenant and VIN pair. */
     public static EntityRef<VehicleActor.Command> getVehicleRef(
         ActorSystem<?> system, String tenantId, String vin) {
         if (tenantId == null || tenantId.isBlank()) throw new IllegalArgumentException("tenantId is required");
         return ClusterSharding.get(system).entityRefFor(VEHICLE_ENTITY_KEY, encode(tenantId, vin));
     }
 
-    /** Returns the stable, delimiter-safe entity identity also used as the persistence ID suffix. */
+    /**
+     * Returns the stable, delimiter-safe identity also used as the persistence ID suffix.
+     * Changing this encoding would orphan previously persisted actor state and therefore requires
+     * an explicit data migration.
+     */
     public static String encode(String tenantId, String vin) {
         Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
         return encoder.encodeToString(tenantId.getBytes(StandardCharsets.UTF_8)) + "."

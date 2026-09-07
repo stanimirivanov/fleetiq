@@ -22,6 +22,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.security.RolesAllowed;
 
+/**
+ * Authenticated gRPC boundary for the device-registry use cases.
+ * Tenant identity is taken from the security context, domain outcomes are translated to precise
+ * gRPC statuses, and only unexpected technical failures are logged at this outer boundary.
+ */
 @Slf4j
 @GrpcService
 @TenantSecured

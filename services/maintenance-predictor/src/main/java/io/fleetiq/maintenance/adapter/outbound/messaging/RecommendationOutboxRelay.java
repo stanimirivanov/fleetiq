@@ -13,7 +13,11 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import java.util.UUID;
 import java.util.function.Function;
 
-/** Relays committed recommendation events to MQTT and deletes only acknowledged rows. */
+/**
+ * Relays committed recommendation events to MQTT and deletes only acknowledged rows.
+ * The resulting delivery is at least once, so recommendation consumers must deduplicate by the
+ * stable event or prediction identifier.
+ */
 @ApplicationScoped
 public class RecommendationOutboxRelay {
 

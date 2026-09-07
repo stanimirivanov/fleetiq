@@ -11,6 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Coordinates telemetry persistence and time-window queries without exposing database details.
+ * Ingestion converts repository completion or failure into the explicit acceptance result used by
+ * both MQTT and gRPC boundaries, while query failures remain reactive failures.
+ */
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor

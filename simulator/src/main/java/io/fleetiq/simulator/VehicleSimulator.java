@@ -17,6 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Produces a small, continuously moving reference fleet for local demonstrations.
+ * Every scheduled cycle advances each vehicle and publishes a telemetry sample through the
+ * same MQTT boundary used by real devices, making the simulator useful for end-to-end checks.
+ */
 @ApplicationScoped
 public class VehicleSimulator {
 

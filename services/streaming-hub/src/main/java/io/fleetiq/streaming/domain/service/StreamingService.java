@@ -12,6 +12,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.time.Duration;
 import java.util.Set;
 
+/**
+ * Builds filtered, demand-paced streams from the shared position event source.
+ * Tenant filtering is always applied before optional VIN filtering, and each subscriber receives
+ * a bounded overflow buffer so a slow client cannot consume unlimited memory.
+ */
 @ApplicationScoped
 public class StreamingService implements StreamingUseCase {
 

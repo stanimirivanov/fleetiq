@@ -9,6 +9,7 @@ import java.util.List;
 
 /** Generates advisory text from deterministic assessment data and authorized evidence. */
 public interface RecommendationModel {
+    /** Returns advice whose citations must be drawn only from the supplied evidence. */
     Uni<RecommendationAdvice> recommend(
         String vin,
         AnomalyAssessment assessment,

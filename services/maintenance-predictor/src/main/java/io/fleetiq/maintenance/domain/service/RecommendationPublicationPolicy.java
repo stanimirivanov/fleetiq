@@ -21,6 +21,7 @@ public class RecommendationPublicationPolicy {
         this.threshold = threshold;
     }
 
+    /** Returns whether the probability meets or exceeds the configured publication threshold. */
     public boolean shouldPublish(PredictionResult prediction) {
         return prediction.failureProbability() >= threshold;
     }

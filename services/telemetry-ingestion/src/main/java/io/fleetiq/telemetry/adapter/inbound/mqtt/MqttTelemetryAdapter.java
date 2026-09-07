@@ -14,6 +14,12 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 
+/**
+ * Inbound adapter for device telemetry arriving over MQTT.
+ * It derives the tenant and VIN from the topic, requires the payload VIN to match, validates the
+ * wire representation, and completes only after the ingestion use case has accepted the sample.
+ * A failed completion leaves redelivery behavior to the configured connector policy.
+ */
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor

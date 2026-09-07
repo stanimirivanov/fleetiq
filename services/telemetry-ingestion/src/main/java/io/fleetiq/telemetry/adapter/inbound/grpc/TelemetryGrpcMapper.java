@@ -7,6 +7,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Instant;
 
+/**
+ * Translates telemetry between protobuf and the domain representation.
+ * Missing optional protobuf values use boundary defaults: the current instant for an absent sample
+ * timestamp and zero coordinates for an absent position.
+ */
 @ApplicationScoped
 public class TelemetryGrpcMapper {
 
@@ -17,9 +22,6 @@ public class TelemetryGrpcMapper {
         return Instant.ofEpochMilli(timestamp.getEpochMillis());
     }
 
-    /**
-     * Maps incoming Protobuf message to Domain Model.
-     */
     public io.fleetiq.telemetry.domain.model.TelemetrySample toDomain(TelemetrySample proto) {
         if (proto == null) {
             return null;
@@ -47,9 +49,6 @@ public class TelemetryGrpcMapper {
             .build();
     }
 
-    /**
-     * Maps Domain Model back to Protobuf message (for outbound streams/responses).
-     */
     public TelemetrySample toProto(io.fleetiq.telemetry.domain.model.TelemetrySample domain) {
         if (domain == null) {
             return TelemetrySample.getDefaultInstance();
@@ -62,21 +61,18 @@ public class TelemetryGrpcMapper {
             .setEngineTempCelsius(domain.engineTempCelsius())
             .setBatteryVoltage(domain.batteryVoltage());
 
-        // Map Timestamp sub-message
         if (domain.timestamp() != null) {
             builder.setTimestamp(Timestamp.newBuilder()
                 .setEpochMillis(domain.timestamp().toEpochMilli())
                 .build());
         }
 
-        // Map Position (GeoPoint) sub-message
         builder.setPosition(GeoPoint.newBuilder()
             .setLatitude(domain.latitude())
             .setLongitude(domain.longitude())
             .setAltitude(domain.altitude())
             .build());
 
-        // Map Map<String, Double> custom metrics
         if (domain.customMetrics() != null) {
             builder.putAllCustomMetrics(domain.customMetrics());
         }

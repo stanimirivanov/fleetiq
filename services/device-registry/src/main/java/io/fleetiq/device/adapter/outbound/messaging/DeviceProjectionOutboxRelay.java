@@ -13,6 +13,11 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import java.util.UUID;
 import java.util.function.Function;
 
+/**
+ * Relays committed device projection events from PostgreSQL to the message broker.
+ * Rows are locked in small batches, published in creation order, and deleted only after broker
+ * acknowledgement. This gives at-least-once delivery, so consumers must remain idempotent.
+ */
 @ApplicationScoped
 public class DeviceProjectionOutboxRelay {
 

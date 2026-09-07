@@ -21,12 +21,17 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 import java.util.UUID;
 
+/**
+ * TimescaleDB adapter for durable telemetry and time-window calculations.
+ * Each insert commits the sample and its position-projection outbox event atomically. Range
+ * queries are tenant-scoped, newest-first, and bounded to protect the service from unbounded reads.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class TimescaleTelemetryRepository implements TelemetryRepository {
 
     private final PgPool pgPool;
-    private final ObjectMapper objectMapper; // ✅ Injected CDI Bean
+    private final ObjectMapper objectMapper;
 
     private static final TypeReference<Map<String, Double>> DOUBLE_MAP_TYPE = new TypeReference<>() {};
 
@@ -59,7 +64,6 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
     @Override
     public Uni<Void> save(String tenantId, TelemetrySample sample) {
         Tuple tuple = Tuple.tuple()
-            // ✅ Preserve UTC offset using OffsetDateTime for TIMESTAMPTZ
             .addOffsetDateTime(OffsetDateTime.ofInstant(sample.timestamp(), ZoneOffset.UTC))
             .addString(tenantId)
             .addString(sample.vin())
@@ -148,7 +152,6 @@ public class TimescaleTelemetryRepository implements TelemetryRepository {
     private Map<String, Double> parseJsonMap(String json) {
         if (json == null || json.isEmpty() || "{}".equals(json)) return Map.of();
         try {
-            // ✅ TypeReference guarantees Double parsing
             return objectMapper.readValue(json, DOUBLE_MAP_TYPE);
         } catch (Exception e) {
             throw new IllegalStateException("Stored custom metrics are invalid JSON", e);

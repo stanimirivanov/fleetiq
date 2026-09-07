@@ -9,6 +9,14 @@ import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+/**
+ * Establishes the tenant context for an authenticated service invocation.
+ *
+ * <p>The interceptor deliberately derives the tenant from the verified JWT rather than from
+ * request data. This prevents callers from selecting another tenant by changing a protobuf
+ * field or message header. The context remains available for the duration of the invocation
+ * through {@link CurrentTenant}.</p>
+ */
 @TenantSecured
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 50)

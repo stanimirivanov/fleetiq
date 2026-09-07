@@ -25,6 +25,7 @@ hardening backlog.
 - [x] Protobuf generates standard and Mutiny gRPC APIs and has a compatibility baseline.
 - [x] Architecture tests protect the service hexagonal boundaries.
 - [x] Root documentation versions, diagrams, links, and commands match the repository.
+- [x] Hand-written Java types have selective, intent-focused Javadoc at architectural boundaries.
 
 ### Primary vertical slices
 
